@@ -7,7 +7,6 @@ import time
 class ConnectSqlDB:
 
     def __init__(self):
-
         self.path_sql_db = Path(Path.cwd(), "Resources", "chatbot.db")
         # Указываем где расположен файл с БД
         #self.path_sql_db = r'C:\inetpub\wwwroot\ApplicationWeb\Resources\chatbot.db'
@@ -15,8 +14,8 @@ class ConnectSqlDB:
         self.conn = sqlite3.connect(self.path_sql_db)
         #
         self.cursor = self.conn.cursor()
-        command = 'PRAGMA foreign_keys=on'
         # Включаем внешние ключи в базе данных SQLite командой PRAGMA
+        command = 'PRAGMA foreign_keys=on'
         self.cursor.execute(command)
         # Подтверждаем действие
         self.conn.commit()
@@ -26,7 +25,6 @@ class ConnectSqlDB:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.conn.close() 
-
     # Метод добавляет данные в БД
     def add_db(self, **kword):
         # Проверяем если ключивой аргумент table равен Users - имя таблицы в БД
@@ -48,12 +46,11 @@ class ConnectSqlDB:
         # Проверяем если ключивой аргумент table равен Ports - имя таблицы в БД
         elif kword['table'] == 'Ports':
             # Формируем запрос: Добавить в таблицу Ports значения ip_addr, port, description, provider
-            query = "INSERT INTO Ports (ip_addr, port, description, provider) VALUES (?, ?, ?, ?)"
+            query = "INSERT INTO Ports (ip_addr, port, description, provider, loading) VALUES (?, ?, ?, ?, ?)"
             # Делаем запрос к БД на добавление данных в таблицу Ports, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['ip'], kword['port'], kword['description'], kword['provider']))
+            self.cursor.execute(query, (kword['ip'], kword['port'], kword['description'], kword['provider'], kword['load']))
             # Подтверждаем действие
             self.conn.commit()
-
         # Проверяем если ключивой аргумент table равен Pid - имя таблицы в БД
         elif kword['table'] == 'Pid':
             # Формируем запрос: Добавить в таблицу Pid значения process_name, process_id
@@ -91,7 +88,8 @@ class ConnectSqlDB:
         self.cursor.execute(query, (kword['chat_id'], kword['user_name']))
         # Подтверждаем действия
         self.conn.commit()
-
+    
+    # Метод добавляет количество трафика в таблицу Ports 
     def add_traffic(self, value, **kword):
         # Добавить значение traffic в таблицу "Ports" ГДЕ ip_addr= kword['ip'] И port = kword['port'] 
         query = "UPDATE Ports set {} = ? WHERE ip_addr = ? and port = ?".format(value)
@@ -106,7 +104,6 @@ class ConnectSqlDB:
         # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
         list_tuple_data = self.cursor.execute(query, (args[0],args[0])).fetchall()# --> list[(),]
         return list_tuple_data
-
 
     # Метод удаляет пользователя из БД
     def del_db(self, **kword):
@@ -161,14 +158,21 @@ class ConnectSqlDB:
         
     # Метод делает запрос к БД, для получения конкретного значения из таблицы 
     def get_db(self, *args, **kword) -> list:
+        # Формируем пустую строку и запсываем ее в переменную line
         line = ''
         for arg in args:
             line += arg +','
         line = line.rstrip(',')
         # Проверяем если ключивой аргумент table равен Users 
         if kword['table'] == 'Users':
-        # Если мы получили ключевые аргументы user_name и chat_id:
-            if kword.get('name') and kword.get('chat') == None:
+            # Если мы получили ключевые аргументы user_name и description
+            if kword.get('name') and kword.get('description'):
+                # Формируем запрос: Получить user_name ГДЕ user_name = kword['user_name'] и description=kword['description']
+                query = "SELECT {} FROM Users WHERE user_name= ? and description = ?".format(line)
+                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
+                list_tuple_name = self.cursor.execute(query, (kword['name'], kword['description'])).fetchall()# --> list[(),] 
+            # Если мы получили ключевые аргументы user_name и chat_id:
+            elif kword.get('name') and kword.get('chat') == None:
                 # Формируем запрос: Получить args ГДЕ user_name = kword['name'] и chat=None
                 query = "SELECT {} FROM Users WHERE user_name= ? and chat_id ISNULL".format(line)
                 # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
@@ -178,31 +182,7 @@ class ConnectSqlDB:
                 # Формируем запрос: Получить user_name ГДЕ user_name = kword['user_name'] и chat_id=kword['chat_id']
                 query = "SELECT {} FROM Users WHERE user_name= ? and chat_id = ?".format(line)
                 # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['name'], kword['chat'])).fetchall()# --> list[(),]   
-            # Если мы получили ключевые аргументы user_name и description
-            #elif kword.get('user_name') and kword.get('description'):
-                # Формируем запрос: Получить user_name ГДЕ user_name = kword['user_name'] и description=kword['description']
-                #query = "SELECT user_name FROM Users WHERE user_name= ? and description = ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                #list_tuple_name = self.cursor.execute(query, (kword['user_name'], kword['description'])).fetchall()# --> list[(),]    
-            # Если мы получили ключевые аргументы chat_id
-            #elif kword.get('chat_id'):
-                # Формируем запрос: Получить user_name, description ГДЕ chat_id = kword['chat_id']
-                #query = "SELECT user_name, description FROM Users WHERE chat_id= ?" 
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                #list_tuple_name = self.cursor.execute(query, (kword['chat_id'])).fetchall()# --> list[(),]
-            # Если мы получили ключевые аргументы user_name
-            #elif kword.get('user_name'):
-                # Формируем запрос: Получить chat_id, description ГДЕ user_name = kword['user_name']
-                #query = "SELECT chat_id, description FROM Users WHERE user_name= ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                #list_tuple_name = self.cursor.execute(query, (kword['user_name'],)).fetchall()# --> list[(),()]
-            # Если мы получили ключевые аргументы description
-            #elif kword.get('description'):
-                # Формируем запрос: Получить user_name, chat_id ГДЕ description = kword['description
-                #query = "SELECT user_name, chat_id FROM Users WHERE description= ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                #list_tuple_name = self.cursor.execute(query, (kword['description'],)).fetchall()# --> list[(),()]
+                list_tuple_name = self.cursor.execute(query, (kword['name'], kword['chat'])).fetchall()# --> list[(),] 
         # Проверяем если ключивой аргумент table равен Devices
         elif kword['table'] == 'Devices':
             # Если мы получили ключевые аргументы model
@@ -225,24 +205,6 @@ class ConnectSqlDB:
                 query = "SELECT {} FROM Ports WHERE ip_addr = ? and port = ?".format(line)
                 # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
                 list_tuple_name = self.cursor.execute(query, (kword['ip'], kword['port'])).fetchall()
-            # Если мы получили ключевые аргументы key
-            #elif kword.get('port'):
-                # Формируем запрос: Получить ip, description ГДЕ port = kword['port']
-                #query = "SELECT ip_addr, description FROM Devices WHERE port = ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                #list_tuple_name = self.cursor.execute(query, (kword['port'],)).fetchall()
-            # Если мы получили ключевые аргументы ip
-            #elif kword.get('ip'):
-                # Формируем запрос: Получить port, description ГДЕ ip = kword['ip']
-                #query = "SELECT port, description FROM Devices WHERE ip_addr = ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                #list_tuple_name = self.cursor.execute(query, (kword['ip'],)).fetchall()
-            # Если мы получили ключевые аргументы description   
-            #elif kword.get('description'):
-                # Формируем запрос: Получить key, ip ГДЕ description = kword['description']
-                #query = "SELECT ip_addr, port FROM Devices WHERE description = ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                #list_tuple_name = self.cursor.execute(query, (kword['description'],)).fetchall()
         # Проверяем если ключивой аргумент table равен Pid
         elif kword['table'] == 'Pid':
             # Если мы получили ключевые аргументы process_name
@@ -324,7 +286,14 @@ class ConnectSqlDB:
         elif table == 'Ports':
             # Если мы получили позиционные аргументы port и ip и description
             if 'port' in args and 'ip_addr' in args and 'description' in args:
-               # Формируем запрос: Получить key, ip, description из таблицы Devices, подставляя в запрос позиционные args аргументы
+               # Формируем запрос: Получить key, ip, description из таблицы Ports, подставляя в запрос позиционные args аргументы
+                query = "SELECT {}, {}, {} FROM Ports".format(args[0], args[1], args[2])
+                 # Делаем запрос к БД на получение данных передав запрос query
+                result = self.cursor.execute(query)
+                return result.fetchall()
+            # Если мы получили позиционные аргументы port и ip и loading
+            elif 'port' in args and 'ip_addr' in args and 'loading' in args:
+                # Формируем запрос: Получить port, ip_addr, loading из таблицы Ports, подставляя в запрос позиционные args аргументы
                 query = "SELECT {}, {}, {} FROM Ports".format(args[0], args[1], args[2])
                  # Делаем запрос к БД на получение данных передав запрос query
                 result = self.cursor.execute(query)
@@ -476,8 +445,8 @@ if __name__ == "__main__":
     #sql.del_db(table='Settings')
     #sql.get(user_name='Кузьмин Иван')
     #print(sql.get_values_list_db('ip_addr','port', table='Ports'))
-    #print(sql.get_db('traffic_in', ip='10.0.31.3', port='4', table='Ports'))
-    sql.add_traffic('traffic_in', traffic = '1232312', ip='10.0.31.3', port='4')
+    print(sql.get_db('model', 'description', ip='10.28.1.193', table='Devices'))
+    #sql.add_traffic('traffic_in', traffic = '1232312', ip='10.0.31.3', port='4')
     #sql._add_column('provider')
     #print(sql.get_table_db())
     #sql._add_table()
