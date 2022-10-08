@@ -2,7 +2,6 @@
 import sqlite3
 import time
 import sys
-#import pandas as pd
 from pathlib import Path
 #from tabulate import tabulate
 import ipaddress
@@ -21,6 +20,7 @@ from class_SecondWindowBrowser import SecondWindowBrowser
 from class_SqlLiteMain import ConnectSqlDB
 from psutil import Process, NoSuchProcess
 import multiprocessing
+
 
 class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
 
@@ -139,8 +139,8 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
                 self.comboBox_4.setItemText(index, ip)
 
     # ОБРАБОТКА НАЖАТИЕ КНОПКИ
-        # Вызываем у нашей кнопки метод pressed(сигнал) и прикрепляем к нему с помощью connect нашу функцию, но как атрибут,
-        # т.е. без скобок. Т.е. при срабатывании сигнала pressed будет вызываться тот метод, который прикреплен к кнопке.
+        # Вызываем у нашей кнопки метод pressed(сигнал) и прикрепляем к нему с помощью connect нашу функцию как атрибут,
+        # т.е. без скобок, поскольку мы ее не вызываем. При срабатывании сигнала pressed будет вызываться тот метод, который прикреплен к кнопке.
         self.Add_User_btn.pressed.connect(self.button_pressed_add)
         self.Delet_User_btn.pressed.connect(self.button_pressed_del)
         self.Show_Users_btn.pressed.connect(self.button_pressed_show_users)
@@ -185,6 +185,7 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.Set_monitor_high_temp_ddm_btn.pressed.connect(self.set_temp_hight_ddm_monitor_btn)
         self.Set_monitor_power_sign_btn.pressed.connect(self.set_signal_low_ddm_monitor_btn)
         self.Set_monitor_count_btn.pressed.connect(self.set_count_check_monitor_btn)
+        #self.checkBox.pressed.connect(self.set_low_trafffic)
 
     # ДОБАВЛЕНИЕ ИКОНКИ С ИЗОБРАЖЕНИЕМ ДЛЯ КНОПКИ
         # Вызываем у кнопки Add_User_btn метод setIcon, передаем в качестве аргумента экземпляр класса icon_btn_add унаследованный от класса 
@@ -610,7 +611,7 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
 
     # Метод проверяет, если пользователь начал ввод текста в поле textEdit, то активируем кнопки иначе кнопки деактивированы, а
     # так же запускает метод _get_position_window, этот метод получает координаты основного окна. 
-    def update_textEdit(self):
+    def update_textEdit(self): 
         # Вызываем метод, который получает координаты основного окна программы относительно расположения его на экране монитора.
         self._get_position_window()
         # Присваиваем полученный список аварий переменной класса ThreadMonitirAlarms snmp_traps от класса ThreadSNMPAsck
@@ -972,7 +973,7 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             try:
                 # Создаем экземпляр класса через менеджер контекста
                 with ConnectSqlDB() as sql:
-                    # Делаем запрос к БД, получить писание устройства ГДЕ ip из таблицы Devices 
+                    # Делаем запрос к БД, получить описание устройства ГДЕ ip из таблицы Devices 
                     description = sql.get_db('description', ip=ip, table='Devices')
                 # Проверяем, что получили данные из запроса
                 if description:
@@ -1126,9 +1127,14 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         ip_addr = self.comboBox_4.currentText()
         # Обращаемся к селектору comboBox_8, получаем значение котрое выбрал пользователь
         provider = self.comboBox_8.currentText()
+        #
+        if self.checkBox.isChecked():
+            load_low = 1
+        else:
+            load_low = 0
         try:
             with ConnectSqlDB() as sql:
-                sql.add_db(ip=ip_addr, port=int(port), description=description, provider=provider, table='Ports')
+                sql.add_db(ip=ip_addr, port=int(port), description=description, provider=provider, load = load_low, table='Ports')
             # Задаем сдвиг диалогового окна относительно основного окна приложения
             self.inf_success.move((self.position_main_window[0] + self.X), (self.position_main_window[1] + self.Y))
             # Вызываем у экземпляра класса QMessageBox() метод exec_(), который вызывает всплывающее окно об успешном добавлении данных
