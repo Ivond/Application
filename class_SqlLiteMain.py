@@ -38,9 +38,9 @@ class ConnectSqlDB:
         # Проверяем если ключивой аргумент table равен Devices - имя таблицы в БД
         elif kword['table'] == 'Devices':
             # Формируем запрос: Добавить в таблицу Devices значения key, ip, description
-            query = "INSERT INTO Devices (model, ip, description) VALUES (?, ?, ?)"
+            query = "INSERT INTO Devices (model, ip, description, num_window) VALUES (?, ?, ?, ?)"
             # Делаем запрос к БД на добавление данных в таблицу Devices, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['model'], kword['ip'], kword['description']))
+            self.cursor.execute(query, (kword['model'], kword['ip'], kword['description'], kword['num_window'],))
             # Подтверждаем действие
             self.conn.commit()
         # Проверяем если ключивой аргумент table равен Ports - имя таблицы в БД
@@ -161,7 +161,7 @@ class ConnectSqlDB:
         # Формируем пустую строку и запсываем ее в переменную line
         line = ''
         for arg in args:
-            line += arg +','
+            line += f"{arg},"
         line = line.rstrip(',')
         # Проверяем если ключивой аргумент table равен Users 
         if kword['table'] == 'Users':
@@ -445,7 +445,7 @@ if __name__ == "__main__":
     #sql.del_db(table='Settings')
     #sql.get(user_name='Кузьмин Иван')
     #print(sql.get_values_list_db('ip_addr','port', table='Ports'))
-    print(sql.get_db('model', 'description', ip='10.28.1.193', table='Devices'))
+    print(sql.get_db('num_window', ip='10.12.12.12', table='Devices'))
     #sql.add_traffic('traffic_in', traffic = '1232312', ip='10.0.31.3', port='4')
     #sql._add_column('provider')
     #print(sql.get_table_db())
