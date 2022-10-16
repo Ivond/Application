@@ -170,11 +170,9 @@ class ClientModbus():
                     self.value_bit = bin(int(match.group('registr_value'), 16)).lstrip('0b')
                     # Если получили значение не равное нулю
                     if self.value_bit:
-                        #print('value_bit', self.value_bit)
                         # Вызываем метод 
                         self._get_signals_controller(self.value_bit)
                     else:
-                        #print('value_bit', self.value_bit)
                         self.stop_motor = 0 
                         self.hight_temp_water = 0
                         self.low_temp_water = 0
@@ -193,41 +191,30 @@ class ClientModbus():
         registr_bit_full = hight_bit + value_bit # Пример: '000000' + '10000' = '00000010000' и тому подобное
         #
         for num, bit in enumerate(registr_bit_full, start=1):
-                #print(num, bit)
-            #if bit == '1':
-                # Аварийная остановка двигателя, бит=0
-                if len(registr_bit_full)-num == 0:
-                    self.stop_motor = bit
-                    #print('self.stop_motor', bit)
-                # Высокая температура охлаждающей жидкости, бит=2
-                elif len(registr_bit_full)-num == 2:
-                    self.hight_temp_water = bit
-                    #print('self.hight_temp_water', bit)
-                # Низкая температура охлаждающей жидкости, бит=3
-                elif len(registr_bit_full)-num == 3:
-                    self.low_temp_water = bit  
-                    #print('self.low_temp_water', bit)
-                # Низкое давление масла, бит=4
-                elif len(registr_bit_full)-num == 4:
-                    self.low_oil_pressure = bit
-                    #print('self.low_oil_pressure', bit)
-                # Низкий уровень охлаждающей жидкости, бит=6
-                elif len(registr_bit_full)-num == 6:
-                    self.low_level_water = bit
-                    #print('self.low_level_water', bit)
-                # Низкий уровень топлива, бит=7
-                elif len(registr_bit_full)-num == 7:
-                    self.low_level_oil = bit
-                    #print('self.low_level_oil', bit)
-                # Переключатель управления двигателем не в автоматическом состоянии, бит=8
-                elif len(registr_bit_full)-num == 8:
-                   self.switch_state_motor = bit
-                   #print('self.switch_not_auto_state', bit)
-                # Низкий уровень заряда батареи, бит=10
-                elif len(registr_bit_full)-num == 10:
-                   self.low_batt_charge = bit
-                   #print('self.low_batt_charge', bit)
-
+            # Аварийная остановка двигателя, бит=0
+            if len(registr_bit_full)-num == 0:
+                self.stop_motor = bit
+            # Высокая температура охлаждающей жидкости, бит=2
+            elif len(registr_bit_full)-num == 2:
+                self.hight_temp_water = bit
+            # Низкая температура охлаждающей жидкости, бит=3
+            elif len(registr_bit_full)-num == 3:
+                self.low_temp_water = bit  
+            # Низкое давление масла, бит=4
+            elif len(registr_bit_full)-num == 4:
+                self.low_oil_pressure = bit
+            # Низкий уровень охлаждающей жидкости, бит=6
+            elif len(registr_bit_full)-num == 6:
+                self.low_level_water = bit
+            # Низкий уровень топлива, бит=7
+            elif len(registr_bit_full)-num == 7:
+                self.low_level_oil = bit
+            # Переключатель управления двигателем не в автоматическом состоянии, бит=8
+            elif len(registr_bit_full)-num == 8:
+                self.switch_state_motor = bit
+            # Низкий уровень заряда батареи, бит=10
+            elif len(registr_bit_full)-num == 10:
+                self.low_batt_charge = bit
 
 if __name__ == '__main__':
     client = ClientModbus()
