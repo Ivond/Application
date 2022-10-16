@@ -65,7 +65,6 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.timer.start()
         
     # СОЗДАЕМ ЭКЗЕМПЛЯРЫ КЛАССОВ 
-        
         # Создаем экземпляр класса Queue(очередь)
         self.line = Queue()
         # Создаем экземпляр класса ThreadSNMPASwitch
@@ -77,40 +76,30 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         # Создаем экземпляр класса SecondWindowBrowser
         self.window = SecondWindowBrowser()
 
-    # ПЕРЕМЕННАЯ ФЛАГ
-        # Создаем переменную флаг is_not_user, для метода button_pressed_del, которая определяет есть пользователь в списке или нет
-        #self.is_not_user = True
-        # Создаем переменную флаг is_not_device, для метода button_pressed_del_device, которая определяет есть устройство в списке или нет
-        #self.is_not_device = True
-        # Создаем переменную флаг is_not_find для метода button_pressed_find_device, значение которого определяет если устройство в списке или нет
-        #self.is_not_find = True
-
     # ПЕРЕМЕННЫЕ PATH
         # Создаем переменные указывающие путь открытия\записи файла
         #self.path_users = Path(Path.cwd(), "Resources", "Users.json")
         #self.path_db = Path(Path.cwd(), "Resources", "DataBase.json")
 
     # ПЕРЕМЕННАЯ КООРДИНАТА
-
         # Создаем переменные координаты X, Y, значение которых будет задавть сдвиг диалогового окна относительно основного окна приложения
         self.X = 100
         self.Y = 150
 
     # ПЕРЕМЕННАЯ ФЛАГ СТИЛЬ SecondWindow
-
+        # Флаги определяют какой из стилей выбран
         self.isStyle_default = True
         self.isStyle_1 = False
         self.isStyle_2 = False
         self.isStyle_3 = False
-
+        # Стиль №1:цвет фона - "Светло-желтый", тип шрифта "Arial"
         self.style_1 = "background-color:  rgb(255, 255, 221);\n" "font: 75 {}pt 'Arial';"
-        #
+        # Стиль №2:цвет фона - "Светло-желтый", тип шрифта "Times New Roman"
         self.style_2 = "background-color:  rgb(255, 255, 221);\n" "font: 75 {}pt 'Times New Roman';"
-        #
+        # Стиль №3:цвет фона - "Светло-желтый", тип шрифта "Book Antiqua"
         self.style_3 = "background-color:  rgb(255, 255, 221);\n" "font: 75 {}pt 'Book Antiqua';"
-        #
+        # Стиль по умолчанию :цвет фона - "Белый", тип шрифта "Arial"
         self.style_default = "background-color:  rgb(255, 255, 255);\n" "font: 75 {}pt 'Arial';"
-
 
     # СТАТУС БАР
         # Создаем экземпляр класса  QLable Выводим сообщение в статус бар со статусом загрузки
@@ -185,7 +174,6 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.Set_monitor_high_temp_ddm_btn.pressed.connect(self.set_temp_hight_ddm_monitor_btn)
         self.Set_monitor_power_sign_btn.pressed.connect(self.set_signal_low_ddm_monitor_btn)
         self.Set_monitor_count_btn.pressed.connect(self.set_count_check_monitor_btn)
-        #self.checkBox.pressed.connect(self.set_low_trafffic)
 
     # ДОБАВЛЕНИЕ ИКОНКИ С ИЗОБРАЖЕНИЕМ ДЛЯ КНОПКИ
         # Вызываем у кнопки Add_User_btn метод setIcon, передаем в качестве аргумента экземпляр класса icon_btn_add унаследованный от класса 
@@ -327,15 +315,11 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         # Вызываем у экземпляра класса QMessageBox() метод buttonClicked(сигнал) и спомощью connect прикрепляем к нему 
         # метод click_btn, котрый будет срабатывать при каждом вызове(нажатии) сигнала buttonClicked, т.е. нажатие на кнопки.
         self.inf_del.buttonClicked.connect(self.click_btn)
-        #self.inf_exit_app.buttonClicked.connect(self.click_btn)
         self.inf_del_device.buttonClicked.connect(self.click_btn_del_device)
         self.inf_del_switch.buttonClicked.connect(self.click_btn_del_switch)
         self.inf_del_join_data.buttonClicked.connect(self.click_btn_del_join_data)
         self.inf_del_port.buttonClicked.connect(self.click_btn_del_port)
-        #self.warn_dubl_name.buttonClicked.connect(self.click_btn_add_name)
-        #self.warn_dubl_ip_device.buttonClicked.connect(self.click_btn_add_ip_device)
         self.inf_close_page.buttonClicked.connect(self.click_btn_close_page)
-        #self.err_token_bot.triggered.connect(self.close)
     
     # СТАТУС БАР
         # Выводим Надпись Готово с изображением в статус Бар
@@ -919,7 +903,7 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             # Вызываем у экземпляра класса QMessageBox() метод exec_(), который вызывает диалоговое окно: "Ошибка запроса к БД"
             self.err_no_such_file_device.exec_()
     
-    #
+    # Метод выводит список портов при нажатии кнопки "Показать"
     def button_pressed_show_ports(self):
         # Переменная для нумерации устройств при выводе их в поле
         num = 0
@@ -1002,21 +986,32 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             # Иначе, если ip адрес введен некорректно, то вызываем у экземпляра класса QMessageBox() метод exec_(), который вызывает диалоговое окно с предупреждением.
             self.err_ip_correct.exec_()
 
-    # Метод добавляет ip адрес и Описание устройства в Базу данных chatbot
+    # Метод добавляет в БД: ip адрес, описание, тип устройства и Номер окна при нажатии кнопки "Добавить"
     def button_pressed_add_device(self):
-        # Обращаемся к селектору comboBox, получаем значение которое выбрал пользователь и записываем в переменную type_device
+        # Обращаемся к селектору comboBox, получаем тип устройства, которое выбрал пользователь
         self.type_device = self.comboBox.currentText().lower()
         # Получаем ip адрес который ввел пользователь в поле textEdit и записываем в переменную ip_address
         self.ip_address = self.textEdit.toPlainText().strip()
-        # Получаем описание места установки устройства, которое ввел пользователь в поле textEdit и записываем в переменную device_name
+        # Получаем описание устройства
         self.device_name = self.textEdit_4.toPlainText().strip()
+        # Если флажок установлен то присваиваем переменной window значение 1
+        if self.window_1_radioButton.isChecked():
+            window = 1
+        elif self.window_2_radioButton.isChecked():
+            window = 2
+        elif self.window_3_radioButton.isChecked():
+            window = 3
+        elif self.window_4_radioButton.isChecked():
+            window = 4
+        else:
+            window = 0
         # Проверяем, что ip адрес введен корректно
         if self._check_ip_address(self.ip_address):
             # Создаем экземпляр класса
             try:
                 with ConnectSqlDB() as sql:
                     # Делаем запрос к БД  на добавление данных в таблицу Devices 
-                    sql.add_db(model=self.type_device, ip=self.ip_address, description=self.device_name, table='Devices')
+                    sql.add_db(model=self.type_device, ip=self.ip_address, description=self.device_name, num_window=window, table='Devices')
                 # Проверяем если тип устройства Cisco
                 if self.type_device == 'cisco':
                     index = self.comboBox_4.count()
