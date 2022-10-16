@@ -283,6 +283,10 @@ class AplicationWidget:
         self.icon_err.addFile(self.path_icon_err)
         # У экземпляра класса info_wait, класс QLable вызываем метод, который добавляет изображение
         self.info_wait.setWindowIcon(self.icon_inf)
+        # Добавление иконки для остановки мелодии для она SecondWindow
+        self.icon_sound_stop = QtGui.QIcon()
+        self.icon_sound_stop.addFile(self.path_icon_btn_stop)
+
 
         # У QMainWindow вызываем метод setWindowIcon, которому передаем экземпляр класса нашего приложения app(self) и экземпляр класса icon_main_window в котором содержится изображение
         QMainWindow.setWindowIcon(self, self.icon_main_window)
@@ -358,6 +362,63 @@ class AplicationWidget:
         self.icon_menu_open.addFile(self.path_icon_menu_open)
         self.icon_menu_exit.addFile(self.path_icon_menu_exit)
         self.icon_close_page.addFile(self.path_icon_close_page)
+
+        # ДИАЛОГОВЫЕ ОКНА ВЫВОДА АВАРИЙ В ОКНО SECONDWINDOW 
+
+        # Низкое напряжение АКБ
+        self.critical_alarm_low_valtage = QMessageBox()
+        self.critical_alarm_low_valtage.setWindowTitle('Авария')
+        self.critical_alarm_low_valtage.setText('Авария')
+        self.critical_alarm_low_valtage.setIcon(QMessageBox.Critical)
+        self.critical_alarm_low_valtage.setWindowIcon(self.icon_err)
+        # Низкий уровень сигнала транспондера MAC&C
+        self.critical_alarm_fiber_low_level = QMessageBox()
+        self.critical_alarm_fiber_low_level.setWindowTitle('Авария')
+        self.critical_alarm_fiber_low_level.setText('Авария')
+        self.critical_alarm_fiber_low_level.setIcon(QMessageBox.Critical)
+        self.critical_alarm_fiber_low_level.setWindowIcon(self.icon_err)
+        # Высокая температура транспондера MAC&C
+        self.critical_alarm_temp_fiber = QMessageBox()
+        self.critical_alarm_temp_fiber.setWindowTitle('Авария')
+        self.critical_alarm_temp_fiber.setText('Авария')
+        self.critical_alarm_temp_fiber.setIcon(QMessageBox.Critical)
+        self.critical_alarm_temp_fiber.setWindowIcon(self.icon_err)
+        # Низкое давление масла
+        self.critical_alarm_low_pressure_oil = QMessageBox()
+        self.critical_alarm_low_pressure_oil.setWindowTitle('Авария')
+        self.critical_alarm_low_pressure_oil.setText('Авария')
+        self.critical_alarm_low_pressure_oil.setIcon(QMessageBox.Critical)
+        self.critical_alarm_low_pressure_oil.setWindowIcon(self.icon_err)
+        # Низкий уровень топлива
+        self.critical_alarm_low_level_oil = QMessageBox()
+        self.critical_alarm_low_level_oil.setWindowTitle('Авария')
+        self.critical_alarm_low_level_oil.setText('Авария')
+        self.critical_alarm_low_level_oil.setIcon(QMessageBox.Critical)
+        self.critical_alarm_low_level_oil.setWindowIcon(self.icon_err)
+        # Аварийный останов двигателя
+        self.critical_alarm_motor_work = QMessageBox()
+        self.critical_alarm_motor_work.setWindowTitle('Авария')
+        self.critical_alarm_motor_work.setText('Авария')
+        self.critical_alarm_motor_work.setIcon(QMessageBox.Critical)
+        self.critical_alarm_motor_work.setWindowIcon(self.icon_err)
+        # Низкий уровень О/Ж
+        self.critical_alarm_level_water = QMessageBox()
+        self.critical_alarm_level_water.setWindowTitle('Авария')
+        self.critical_alarm_level_water.setText('Авария')
+        self.critical_alarm_level_water.setIcon(QMessageBox.Critical)
+        self.critical_alarm_level_water.setWindowIcon(self.icon_err)
+        # Низкая температура О/Ж
+        self.critical_alarm_low_temp_water = QMessageBox()
+        self.critical_alarm_low_temp_water.setWindowTitle('Авария')
+        self.critical_alarm_low_temp_water.setText('Авария')
+        self.critical_alarm_low_temp_water.setIcon(QMessageBox.Critical)
+        self.critical_alarm_low_temp_water.setWindowIcon(self.icon_err)
+        # Высокая температура О/Ж
+        self.critical_alarm_hi_temp_water = QMessageBox()
+        self.critical_alarm_hi_temp_water.setWindowTitle('Авария')
+        self.critical_alarm_hi_temp_water.setText('Авария')
+        self.critical_alarm_hi_temp_water.setIcon(QMessageBox.Critical)
+        self.critical_alarm_hi_temp_water.setWindowIcon(self.icon_err)
 
         
 
