@@ -72,7 +72,7 @@ class ClientModbus():
     '''
     
     # Метод отправляет запрос на оборудование по протоколу Modbus
-    def modbus(self, ip, time_out=10) -> str:
+    def modbus(self, ip, time_out=10, count = 1) -> str:
         # Упаковываем данные в байты для отправки на устройство (Н-2байта, В-1байт)
         req1 = struct.pack('>HHHBBHH', 0x01, 0x00, 0x06, self.unit_id, self.function_code, 24587, 0x04)
         req2 = struct.pack('>HHHBBHH', 0x02, 0x00, 0x06, self.unit_id, self.function_code, 24714, 0x02)
@@ -111,16 +111,11 @@ class ClientModbus():
             # Запрашиваем ответ
             #self._recieve_responce()
             # Формируем строку с результатом
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ОПС:[{self.ao_ops}][{self.do_ops}]; Топл.:{self.fuel}%; Bat:{self.bat_V}V; АО:{self.ao_tmp}*C; ДО:{self.do_tmp}*C; О/Ж:{self.af_tmp}*C; Двиг.:{self.stop_motor}"
-            motor = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Работа двигателя: [{self.stop_motor}]"
-            hight_temp_water = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Высокая температура О/Ж: [{self.hight_temp_water}]"
-            low_temp_water = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Низкая температура О/Ж: [{self.low_temp_water}]"
-            low_level_oil = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Уровень топлтва: [{self.low_level_oil}]"
-            low_oil_pressure = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Низкое давление масла: [{self.low_oil_pressure}]" 
-            low_water = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Низкий уровень О/Ж: [{self.low_level_water}]"
-            switch_motor = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Переключатель управления двигателем не в автоматическом состоянии: [{self.switch_state_motor}]"
-            low_batt_charge = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} ДГУ: Низкий заряд АКБ: [{self.low_batt_charge}]"
-            return result,motor,hight_temp_water,low_temp_water,low_level_oil,low_oil_pressure,low_water,switch_motor,low_batt_charge
+            #result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {count}; ОПС:[{self.ao_ops}][{self.do_ops}]; Топл.:{self.fuel}%; Bat:{self.bat_V}V; АО:{self.ao_tmp}*C; ДО:{self.do_tmp}*C; О/Ж:{self.af_tmp}*C; Двиг.:{self.stop_motor}"
+            # Формируем строку с результатом
+            #result_dgu = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {count}; ДГУ: Двиг.:[{self.stop_motor}]; Выс.Темп_О/Ж:[{self.hight_temp_water}]; Низ.Темп_О/Ж:[{self.low_temp_water}]; Топл.:[{self.low_level_oil}]; ДМ:[{self.low_oil_pressure}]; Уров.О/Ж:[{self.low_level_water}]; ПУД:[{self.switch_state_motor}]; Бат.:[{self.low_batt_charge}]" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {count}; ДГУ: ОПС:[{self.ao_ops}][{self.do_ops}]; Топл.:{self.fuel}%; Bat:{self.bat_V}V; АО:{self.ao_tmp}*C; ДО:{self.do_tmp}*C; О/Ж:{self.af_tmp}*C; Двиг.:[{self.stop_motor}]; Выс.Темп_О/Ж:[{self.hight_temp_water}]; Низ.Темп_О/Ж:[{self.low_temp_water}]; Топл.:[{self.low_level_oil}]; ДМ:[{self.low_oil_pressure}]; Уров.О/Ж:[{self.low_level_water}]; ПУД:[{self.switch_state_motor}]; Бат.:[{self.low_batt_charge}]" 
+            return result
         except socket.timeout:
             # Формируем строку ответа в случаи ошибки
             error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
@@ -131,7 +126,6 @@ class ClientModbus():
     def _recieve_responce(self):
         # Запрашиваем данные и переводим их в 16-ти ричную систему
         responce = self.client.recv(self.buffer_size).hex()
-        #print(responce)
         # Если в запросе есть данные
         if responce:
             # Если длина полученных данных равна 34
@@ -176,44 +170,68 @@ class ClientModbus():
                     self.value_bit = bin(int(match.group('registr_value'), 16)).lstrip('0b')
                     # Если получили значение не равное нулю
                     if self.value_bit:
+                        #print('value_bit', self.value_bit)
                         # Вызываем метод 
                         self._get_signals_controller(self.value_bit)
+                    else:
+                        #print('value_bit', self.value_bit)
+                        self.stop_motor = 0 
+                        self.hight_temp_water = 0
+                        self.low_temp_water = 0
+                        self.low_oil_pressure = 0
+                        self.low_level_water = 0
+                        self.low_level_oil = 0
+                        self.switch_state_motor = 0 
+                        self.low_batt_charge = 0
                 else:
-                   self.alarm_stop_motor = None 
+                   self.alarm_stop_motor = 0 
 
-    def _get_signals_controller(self, register_value):
+    def _get_signals_controller(self, value_bit):
+        # Получаем количество старших бит значения которых равны нулю
+        hight_bit = (11 - len(value_bit)) * '0' # Пример: (11- 6) * '0' = '000000'
+        # Получаем полную полседовательность бит регистра сложив старшие нулевые биты и полседовательность бит полученную при опросе устройства
+        registr_bit_full = hight_bit + value_bit # Пример: '000000' + '10000' = '00000010000' и тому подобное
         #
-        for num, bit in enumerate(register_value, start=1):
-            if bit == '1':
+        for num, bit in enumerate(registr_bit_full, start=1):
+                #print(num, bit)
+            #if bit == '1':
                 # Аварийная остановка двигателя, бит=0
-                if len(register_value)-num == 0:
-                    self.stop_motor = 1
+                if len(registr_bit_full)-num == 0:
+                    self.stop_motor = bit
+                    #print('self.stop_motor', bit)
                 # Высокая температура охлаждающей жидкости, бит=2
-                if len(register_value)-num == 2:
-                    self.hight_temp_water = 1
+                elif len(registr_bit_full)-num == 2:
+                    self.hight_temp_water = bit
+                    #print('self.hight_temp_water', bit)
                 # Низкая температура охлаждающей жидкости, бит=3
-                if len(register_value)-num == 3:
-                    self.low_temp_water = 1  
+                elif len(registr_bit_full)-num == 3:
+                    self.low_temp_water = bit  
+                    #print('self.low_temp_water', bit)
                 # Низкое давление масла, бит=4
-                if len(register_value)-num == 4:
-                    self.low_oil_pressure = 1
+                elif len(registr_bit_full)-num == 4:
+                    self.low_oil_pressure = bit
+                    #print('self.low_oil_pressure', bit)
                 # Низкий уровень охлаждающей жидкости, бит=6
-                if len(register_value)-num == 6:
-                    self.low_level_water = 1
+                elif len(registr_bit_full)-num == 6:
+                    self.low_level_water = bit
+                    #print('self.low_level_water', bit)
                 # Низкий уровень топлива, бит=7
-                if len(register_value)-num == 7:
-                    self.low_level_oil = 1
+                elif len(registr_bit_full)-num == 7:
+                    self.low_level_oil = bit
+                    #print('self.low_level_oil', bit)
                 # Переключатель управления двигателем не в автоматическом состоянии, бит=8
-                if len(register_value)-num == 8:
-                   self.switch_not_auto_state = 1
+                elif len(registr_bit_full)-num == 8:
+                   self.switch_state_motor = bit
+                   #print('self.switch_not_auto_state', bit)
                 # Низкий уровень заряда батареи, бит=10
-                if len(register_value)-num == 10:
-                   self.low_batt_charge = 1
+                elif len(registr_bit_full)-num == 10:
+                   self.low_batt_charge = bit
+                   #print('self.low_batt_charge', bit)
 
 
 if __name__ == '__main__':
     client = ClientModbus()
-    print(client.modbus('10.19.178.2'))
+    print(client.modbus('10.184.50.200'))
     #time.sleep(30)
     #print(client.modbus_alm_stop_motor('10.184.50.200'))
         
