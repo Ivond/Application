@@ -30,6 +30,7 @@ class AplicationWidget:
         self.path_icon_done = str(Path(Path.cwd(), "Resources", "Icons", "icn15.ico"))
         self.path_icon_progress = str(Path(Path.cwd(), "Resources", "Icons", "icn16.ico"))
         self.path_icon_not_runn = str(Path(Path.cwd(), "Resources", "Icons", "icn14.ico"))
+        self.path_icon_sound_stop = str(Path(Path.cwd(), "Resources", "Icons", "icn65.ico"))
 
         # СОЗДАНИЕ ЭКЗЕМПЛЯРА КЛАССА QLable, ДЛЯ СОЗДАНИЯ ОКНА УВЕДОМЛЕНИЯ
         
@@ -129,6 +130,7 @@ class AplicationWidget:
         self.inf_signal_low_ddm = QMessageBox()
         self.inf_temp_low_ddm = QMessageBox()
         self.err_value = QMessageBox()
+        self.inf_not_select_radioButton = QMessageBox()
 
         # Вызываем у экземпляра класса QMessageBox() метод setWindowTitle, который задает заголовок диалоговому окну.
         self.inf_del.setWindowTitle('Уведомление')
@@ -164,6 +166,7 @@ class AplicationWidget:
         self.inf_signal_low_ddm.setWindowTitle('Уведомление')
         self.inf_temp_low_ddm.setWindowTitle('Уведомление')
         self.err_value.setWindowTitle('Ошибка')
+        self.inf_not_select_radioButton.setWindowTitle('Уведомление')
 
         # Вызываем у экземпляра класса QMessageBox() метод setText, который будет выводить текст уведомления при появлении 
         # диалогового окна
@@ -191,6 +194,7 @@ class AplicationWidget:
         self.inf_signal_low_ddm.setText('Недопустимое значение')
         self.inf_temp_low_ddm.setText('Недопустимое значение')
         self.err_value.setText('Ошибка значения')
+        self.inf_not_select_radioButton.setText('Выберете номер окна')
 
         # Вызываем у экземпляра класса QMessageBox() метод setIcon, который задает иконку, которая будет полявляется вместе 
         # с диалоговым окном.
@@ -226,6 +230,7 @@ class AplicationWidget:
         self.inf_signal_low_ddm.setIcon(QMessageBox.Information)
         self.inf_temp_low_ddm.setIcon(QMessageBox.Information)
         self.err_value.setIcon(QMessageBox.Critical)
+        self.inf_not_select_radioButton.setIcon(QMessageBox.Information)
 
         # Вызываем у экземпляра класса QMessageBox() метод setStandardButtons, который создает кнопки диалоговому окну
         self.inf_del.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
@@ -285,7 +290,7 @@ class AplicationWidget:
         self.info_wait.setWindowIcon(self.icon_inf)
         # Добавление иконки для остановки мелодии для она SecondWindow
         self.icon_sound_stop = QtGui.QIcon()
-        self.icon_sound_stop.addFile(self.path_icon_btn_stop)
+        self.icon_sound_stop.addFile(self.path_icon_sound_stop)
 
 
         # У QMainWindow вызываем метод setWindowIcon, которому передаем экземпляр класса нашего приложения app(self) и экземпляр класса icon_main_window в котором содержится изображение
@@ -313,6 +318,7 @@ class AplicationWidget:
         self.warn_no_username_file.setWindowIcon(self.icon_warn)
         self.warn_no_device_file.setWindowIcon(self.icon_warn)
         self.err_request_db.setWindowIcon(self.icon_err)
+        self.inf_not_select_radioButton.setWindowIcon(self.icon_inf)
 
         # Диалоговые окна для установок значения параметров мониторинга
         self.inf_interval_time.setWindowIcon(self.icon_inf)
