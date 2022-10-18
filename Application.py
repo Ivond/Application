@@ -221,6 +221,7 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.Set_monitor_count_btn.setIcon(self.icon_btn_set)
         self.Set_window_font_size_alarm_btn.setIcon(self.icon_btn_set)
         self.Set_window_style_sheet_btn.setIcon(self.icon_btn_set)
+        self.Show_ports_btn.setIcon(self.icon_btn_show)
 
     # Вывводим первоначальное значение интервала между опросами SNMPAsk
         self.textBrowser_4.append(str(self.snmp_ask.interval_time))
@@ -1004,7 +1005,11 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         elif self.window_4_radioButton.isChecked():
             window = 4
         else:
-            window = 0
+            # Задаем сдвиг диалогового окна относительно основного окна приложения
+            self.inf_not_select_radioButton.move((self.position_main_window[0] + self.X), (self.position_main_window[1] + self.Y))
+            # Вызываем диалоговое окно с уведомлением, что не выбран Номер Окна.
+            self.inf_not_select_radioButton.exec_()
+            return None 
         # Проверяем, что ip адрес введен корректно
         if self._check_ip_address(self.ip_address):
             # Создаем экземпляр класса
