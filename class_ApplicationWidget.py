@@ -292,7 +292,6 @@ class AplicationWidget:
         self.icon_sound_stop = QtGui.QIcon()
         self.icon_sound_stop.addFile(self.path_icon_sound_stop)
 
-
         # У QMainWindow вызываем метод setWindowIcon, которому передаем экземпляр класса нашего приложения app(self) и экземпляр класса icon_main_window в котором содержится изображение
         QMainWindow.setWindowIcon(self, self.icon_main_window)
         # У экземпляра класса inf_add, класс QMessageBox вызываем метод setWindowIcon, которому мы передаем экземпляр класса icon_inf в которм содержится изображение
