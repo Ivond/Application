@@ -19,11 +19,11 @@ class ThreadSNMPAsk(QThread, ClientModbus):
         QThread.__init__(self)
     
         # Переменная определяет время между запросами цикла while
-        self.interval_time = 5
+        self.interval_time = 10
         #
         self.snmp_trap = []
         #
-        #self.snmp_trap1 = []
+        self.counter = 1
         # Переменная queue, которой присваиваем значение экземпляр класса queue ( обработчик очередей) полученной
         # при вызове данного класса
         #self.queue = queue
@@ -145,7 +145,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 # Используем метод value получаем из OCTET_STRING значение в байтах преобразуем его в строку и добавляем в список values
                 values.append(snmp_octet_string[-1].value.decode())
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} TxFiber2: {values[1]} dBm; RxFiber2: {values[2]} dBm; TempFiber2: {values[0]} *C; TxFiber3: {values[4]} dBm; RxFiber3: {values[5]} dBm; TempFiber3: {values[3]} *C" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; TxFiber2: {values[1]} dBm; RxFiber2: {values[2]} dBm; TempFiber2: {values[0]} *C; TxFiber3: {values[4]} dBm; RxFiber3: {values[5]} dBm; TempFiber3: {values[3]} *C" 
             return result
         else:
             return out
@@ -165,9 +165,8 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 else:
                     values.append(tuple_snmp_data[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[0]} V; OUT: {values[1]} V ({values[2]} А); *C: {values[3]}"  
-            # Возвращаем результат (это нужно для Приложения, когда мы делаем проверку к какой группе относится устройство и что бы
-            # узнать, что метод корректно отработал нам нужно получить данные)
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[0]} V; OUT: {values[1]} V ({values[2]} А); *C: {values[3]}"  
+            # Возвращаем результат
             return result
         else:
             return out
@@ -188,7 +187,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 else:
                     values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[6]} V [status: {values[4]}]; OUT: {values[3]} V ({values[0]} А). Batt: {values[5]}%. *C: {values[1]}"  
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[6]} V [status: {values[4]}]; OUT: {values[3]} V ({values[0]} А). Batt: {values[5]}%. *C: {values[1]}"  
             return result
         else:
             return out
@@ -211,7 +210,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 else:
                     values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[5]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); Batt: {values[4]}%; *C: {values[1]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[5]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); Batt: {values[4]}%; *C: {values[1]}" 
             return result
         # Иначе, мы получили строку с именем ошибки 
         else:
@@ -232,7 +231,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 else:
                     values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[4]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); *C: {values[1]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[4]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); *C: {values[1]}" 
             return result
         # Иначе, мы получили строку с именем ошибки 
         else:
@@ -249,7 +248,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 snm = i.values
                 values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[3]} V [status: {values[5]}]; OUT: {values[2]} V; Load: {values[1]}% ({values[0]} WT); Batt: {values[4]}%; *C: {values[6]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[3]} V [status: {values[5]}]; OUT: {values[2]} V; Load: {values[1]}% ({values[0]} WT); Batt: {values[4]}%; *C: {values[6]}" 
             return result
         # Иначе, мы получили строку с именем ошибки 
         else:
@@ -272,7 +271,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 else:
                     values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[2]} V; OUT: {values[1]} V Load: ({values[0]}A); *C: {values[3]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[2]} V; OUT: {values[1]} V Load: ({values[0]}A); *C: {values[3]}" 
             return result
         # Иначе, мы получили строку с именем ошибки 
         else:
@@ -289,7 +288,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 snm = i.values
                 values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[1]} V; OUT: {values[0]} V Batt: {values[3]}%; *C: {values[2]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[1]} V; OUT: {values[0]} V Batt: {values[3]}%; *C: {values[2]}" 
             return result
         # Иначе, мы получили строку с именем ошибки 
         else:
@@ -309,13 +308,15 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                 # Используем метод value получаем из SNMP_INTEGER числовое значение и добавляем в список values
                 values.append(snm_integer[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} IN: {values[2]} V  [status: {values[3]}]; OUT: {values[1]} V; Load: {values[0]}%; Batt: {values[5]}%; *C: {values[4]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[2]} V  [status: {values[3]}]; OUT: {values[1]} V; Load: {values[0]}%; Batt: {values[5]}%; *C: {values[4]}" 
             return result
         else:
             return out
 
     # Метод запускает SNMP опрощик
     def run(self):
+        # Счетчик записываем количество итераций сделанных циклом while
+        self.counter = 1
         while True:
             with Manager(b'public', version=1) as self.manager:
                 # Создаем переменную в которую будем сохранять результаты snmp
@@ -377,17 +378,18 @@ class ThreadSNMPAsk(QThread, ClientModbus):
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
                         elif model == 'modbus':
-                            # Вызываем метод modbus передавая ему ip адрес устройства
-                            result = self.modbus(ip)
+                            # Вызываем метод modbus передавая ему ip адрес устройства  и значение счетчика итераций
+                            result = self.modbus(ip, count = self.counter)
                             if type(result) is tuple:
-                                #
-                                self._parse_result_modbus(result)
+                                # Преобразуем кортеж в список и объеденяем со списком snmp_trap
+                                self.snmp_trap += list(result)
                             else:
                                 # Добавляем результат в список snmp_trap
                                 self.snmp_trap.append(result)
-                else:
-                    pass
-                self.sleep(self.interval_time)
+            #
+            self.sleep(self.interval_time)
+            # Увеличиваем счетчик на 1
+            self.counter += 1
     
     # Метод останавливает работу SNMP Manager-а
     def snmp_stop(self):
@@ -395,14 +397,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             self.manager.close()
         except AttributeError:
             pass
-    #
-    def _parse_result_modbus(self, result):
-        #
-        for line in result:
-            # Добавляем результат в список snmp_trap
-            self.snmp_trap.append(line)
 
-        
 
 if __name__ == '__main__':
     snmp = ThreadSNMPAsk()
