@@ -9,7 +9,7 @@ import sqlite3
 #from queue import Queue, Empty
 from pathlib import Path
 from operator import itemgetter
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, error
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, error, ParseMode, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from class_TelegrambotAlarm import TelegramBotAlarmStatus
 from class_ThreadSNMPAsc import ThreadSNMPAsk
@@ -78,7 +78,7 @@ class TelegramBot():
     # Метод отправляет Ботом сообщение пользователю в ответ на принятое сообщение от него.
     def echo(self, update: Update, context: CallbackContext) -> None:
         """Echo the user message."""
-        update.message.reply_text(update.message.text)
+        update.message.reply_text(update.message.text, ParseMode.HTML)
         # Создаем атрибут question, бот получает вопрос от пользователей и записываем в атрибут question, 
         # который мы передадим на вход нашей функции по обработке ответов. 
         self.question = update.message.text
@@ -93,7 +93,7 @@ class TelegramBot():
         # Создаем метод для post запроса 
         method = self.url + self.token + "/sendMessage"
         # Формируем параметры которые мы будем передавать при post запросе на url API
-        data={"chat_id":chat_id, "text":text}
+        data={"chat_id":chat_id, "text":text, "parse_mode":ParseMode.HTML}
         try:
             result = requests.post(method, json=data)
             return result.status_code
@@ -171,7 +171,7 @@ class TelegramBot():
             name_user = first_name
         # Получаем chat id пользователя отправившего команду
         id = update.message.chat.id
-        # Создаем экземпляр класса, для подключения к БД
+        # Подключаемся к БД
         with ConnectSqlDB() as sql_db:
             # Делаем запрос к БД на получение имени пользователя из таблицы Users
             name = sql_db.get_db('user_name', name=name_user, chat=id, table='Users')
@@ -195,67 +195,82 @@ class TelegramBot():
                 self.active_alarms(update, context)
             elif update.message.text.lower() == '/avtobus':
                 self.avtobus(update, context)
-        # Иначе, если в БД нет пользователя с таким user_name и chat_id
+        # Иначе, если в БД нет пользователя с user_name и chat_id
         else:
-            # Делаем запрос к БД получить никнейм пользователя ГДЕ никнейм и chat_id=None из таблицы Users
-            name = sql_db.get_db('user_name', name=name_user, chat=None, table='Users') # -> list(),
-            # Если получили имя пользователя и отправленная команда пользователем равна /start
-            if name and update.message.text.lower() == '/start':
-                try:
-                    # Делаем запрос к БД на добавление chat_id пользователя в таблицу Users.
-                    sql_db.add_chat_id(user_name=name[0], chat_id=id)
-                    # Вызываем функцию кторая отвечает за команду /start
-                    self.star(update, context)
-                except (sqlite3.IntegrityError,sqlite3.OperationalError):
-                    # TODO logging.error ошибка запроса к БД
-                    self.logger_bot.error('TelegramBot: _check_user_command Ошибка запроса к БД, на добаления chat_id пользователя')
+            try:
+                # Создаем экземпляр класса, для подключения к БД
+                with ConnectSqlDB() as sql_db:
+                    # Делаем запрос к БД получить никнейм пользователя ГДЕ никнейм и chat_id=None из таблицы Users
+                    name = sql_db.get_db('user_name', name=name_user, chat=None, table='Users') # -> list[()]
+                    # Если получили имя пользователя и отправленная команда пользователем равна /start
+                    if name and update.message.text.lower() == '/start':
+                        # Делаем запрос к БД на добавление chat_id пользователя в таблицу Users.
+                        sql_db.add_chat_id(user_name=name[0][0], chat_id=id)
+                        # Вызываем функцию кторая отвечает за команду /start
+                        self.star(update, context)
+            except (sqlite3.IntegrityError,sqlite3.OperationalError, sqlite3.InterfaceError):
+                # TODO logging.error ошибка запроса к БД
+                self.logger_bot.error('TelegramBot: _check_user_command Ошибка запроса к БД, на добаления chat_id пользователя')
               
     # Метод получает из БД аварии и возвращает список активных аварий 
     def _get_alarms(self):
         list_alarms = []
-        # Создаем экземпляр класса sql_db
-        with ConnectSqlDB() as sql_db:
-            # Делаем запрос к БД вызываем метод get_values_list_db
-            db_alarm = sql_db.get_values_list_db('data', table='Alarms') # -> dict{}
-        # Проверяем, если запрос нам вернул данные
-        if db_alarm:
-            if db_alarm['limit_oil']:
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(db_alarm['limit_oil'].values())
-            if db_alarm['low_voltage']:
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(db_alarm['low_voltage'].values())
-            if db_alarm['power_alarm']:
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(db_alarm['power_alarm'].values())
-            if db_alarm['hight_temp']:
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(db_alarm['hight_temp'].values())
-            if db_alarm['low_temp']:
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(db_alarm['low_temp'].values())
-            if db_alarm['low_signal_power']:
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(db_alarm['low_signal_power'].values())
-            if db_alarm['channel']:
-                dic = list(db_alarm['channel'].values())
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(dic[0].values())
-            if db_alarm['error']:
-                # Создаем список с именем переменной list_alarms, куда добавляем аварии
-                list_alarms += list(db_alarm['error'].values())
-            # Вызываем метод который отсортировавывает список аварий по дате и возвращает кортеж
-            string_alarms, lengh = self._sorted_alarms(list_alarms) # --> tuple()
-            # Возвращаем строку с отсортированными авриями и длину списка аварий
-            return string_alarms, lengh
-        else:
-            self.logger_bot.error('TelegramBot: _get_alarms не получил данные из БД')
-    
+        try:
+            # Создаем экземпляр класса sql_db
+            with ConnectSqlDB() as sql_db:
+                # Делаем запрос к БД вызываем метод get_values_list_db
+                db_alarm = sql_db.get_values_list_db('data', table='Alarms') # -> dict{}
+            # Проверяем, если запрос нам вернул данные
+            if db_alarm:
+                if db_alarm['limit_oil']:
+                    # Создаем список с именем переменной list_alarms, куда добавляем аварии
+                    list_alarms += list(db_alarm['limit_oil'].values())
+                if db_alarm['low_voltage']:
+                    # Создаем список с именем переменной list_alarms, куда добавляем аварии
+                    list_alarms += list(db_alarm['low_voltage'].values())
+                if db_alarm['power_alarm']:
+                    # Создаем список с именем переменной list_alarms, куда добавляем аварии
+                    list_alarms += list(db_alarm['power_alarm'].values())
+                if db_alarm['hight_temp']:
+                    # Создаем список с именем переменной list_alarms, куда добавляем аварии
+                    list_alarms += list(db_alarm['hight_temp'].values())
+                if db_alarm['low_temp']:
+                    # Создаем список с именем переменной list_alarms, куда добавляем аварии
+                    list_alarms += list(db_alarm['low_temp'].values())
+                if db_alarm['low_signal_power']:
+                    # Создаем список с именем переменной list_alarms, куда добавляем аварии
+                    list_alarms += list(db_alarm['low_signal_power'].values())
+                if db_alarm['channel']:
+                    # Обращаемся к словарю словарей по ключу channel, получаем список словарей со значениями
+                    # такого формата [{port:description, port:description}, {port:description,},]
+                    list_dict = list(db_alarm['channel'].values())
+                    for dict_item in list_dict:
+                        for item in dict_item.values():
+                            # Добавляем описание аварий в созданный список list_alarms
+                            list_alarms.append(item)
+                if db_alarm['dgu']:
+                    # Обращаемся к словарю словарей по ключу dgu, получаем список словарей со значениями
+                    # такого формата [{key:description, key:description}, {key:description,},]
+                    list_dict = list(db_alarm['dgu'].values())
+                    for dict_item in list_dict:
+                        for item in dict_item.values():
+                            # Добавляем описание аварий в созданный список list_alarms
+                            list_alarms.append(item)
+                if db_alarm['error']:
+                    # Создаем список с именем переменной list_alarms, куда добавляем аварии
+                    list_alarms += list(db_alarm['error'].values())
+                # Вызываем метод который отсортировавывает список аварий по дате и возвращает кортеж
+                string_alarms, lengh = self._sorted_alarms(list_alarms) # --> tuple()
+                # Возвращаем строку с отсортированными авриями и длину списка аварий
+                return string_alarms, lengh
+        except (sqlite3.IntegrityError, sqlite3.OperationalError) as err:
+            self.logger_bot.error(f'TelegramBot: _get_alarms Ошибка запроса к БД на получение аварий\n{err}')
+
     # Метод сортирует список аварии по дате и времени, принимает на вход список аварий
     def _sorted_alarms(self, list_alarms) ->tuple:
         string_alarms = ''
         for line in sorted(list_alarms, reverse=True, key=itemgetter(3,4,0,1,11,12,14,15)):
-            string_alarms += line + '\n\n'
+            string_alarms += f'{line}\n\n'
         return string_alarms, len(list_alarms)
     
     def star(self, update: Update, context: CallbackContext) -> None:
@@ -272,8 +287,8 @@ class TelegramBot():
     def help_command(self, update: Update, context: CallbackContext) -> None:
         """Send a message when the command /help is issued."""
         text = '''У чат Бота реализован следующий функционал:
-    /Alarm - получить список текущих аварий
-    /Status - получение актуальных параметров по текущим авариям.'''
+    /Alarm - <b>получить список текущих аварий</b>
+    /Status - <b>получение актуальных параметров по текущим авариям.</b>'''
 
         """
         /ping проверяем доступность оборудования, текст сообщения выглядит так: /ping пробел ip-адрес устройства.
@@ -286,7 +301,7 @@ class TelegramBot():
         /close - отключить клавиатуру
         """
         try:
-            update.message.reply_text(text)
+            update.message.reply_text(text, parse_mode = ParseMode.HTML)
         except (error.TimedOut, error.BadRequest, error.InvalidToken, error.Unauthorized, error.NetworkError, error.Conflict) as err:
             self.logger_bot.error(f'TelegramBot: help_command Ошибка подключения к сети интерет: {err}')
 
@@ -309,11 +324,11 @@ class TelegramBot():
         else:
             output = self._connect_device()
         try:
-            update.message.reply_text(output)
+            update.message.reply_text(output, ParseMode.HTML)
         # Попадаем в исключение откуда получаем код ошибки, который говорит, что запрошено слишком длинное сообщение для отправки
         except error.BadRequest as err:
             # Отправляем пользователю
-            update.message.reply_text(err.message)
+            update.message.reply_text(err.message, ParseMode.HTML)
         except (error.TimedOut, error.InvalidToken, error.Unauthorized, error.NetworkError, error.Conflict) as err:
             self.logger_bot.error(f'TelegramBot: show Ошибка подключения к сети интерет: {err}')
 
@@ -325,7 +340,7 @@ class TelegramBot():
         result = self._ping_device(text)
         try:
             # Отправляем боту результат
-            update.message.reply_text(result)
+            update.message.reply_text(result, ParseMode.HTML)
         except (error.TimedOut, error.BadRequest, error.InvalidToken, error.Unauthorized, error.NetworkError, error.Conflict) as err:
             self.logger_bot.error(f'TelegramBot: ping Ошибка подключения к сети интерет: {err}')
 
@@ -333,7 +348,7 @@ class TelegramBot():
     def status(self, update: Update, context: CallbackContext):
         """Send a message when the command /Status is issued."""
         try:
-            update.message.reply_text(self.report)
+            update.message.reply_text(self.report, ParseMode.HTML)
         except (error.TimedOut, error.BadRequest, error.InvalidToken, error.Unauthorized, error.NetworkError, error.Conflict) as err:
             self.logger_bot.error(f'TelegramBot: status Ошибка подключения к сети интерет: {err}') 
 
@@ -341,7 +356,7 @@ class TelegramBot():
     def status_alarm(self, update: Update, context: CallbackContext):
         """Send a message when the command /Status is issued."""
         # Отправляем сообщение что выполняется snmp опрос оборудования 
-        update.message.reply_text('Выполняется...')
+        update.message.reply_text('Выполняется...', ParseMode.HTML)
         try:
             # Вызываем у экземпляра классса bot_status_alarm метод get_active_alarms, делаем запрос активных аварий
             list_alarms = self.bot_status_alarm.get_active_alarms() # --> List[] | None
@@ -352,16 +367,16 @@ class TelegramBot():
                 # Если длина списка аварий меньше 21
                 if lenght < 21:
                     # Отправляем отсортированный список аварий пользователю полностью ввиде строки 
-                    update.message.reply_text(string_alarms) 
+                    update.message.reply_text(string_alarms, ParseMode.HTML) 
                 else:
                     # Преобразуем отсортированную строку с авариями в список
                     alarms = string_alarms.split('\n\n') # --> list[]
                     # Отправляем список аварий по частям предварительно перепреобразовав в строку 
-                    update.message.reply_text('\n\n'.join(alarms[:21]))
-                    update.message.reply_text('\n\n'.join(alarms[21:]))
+                    update.message.reply_text('\n\n'.join(alarms[:21]), ParseMode.HTML)
+                    update.message.reply_text('\n\n'.join(alarms[21:]), ParseMode.HTML)
             else:
                 message = 'Текущие аварии отсутствуют'
-                update.message.reply_text(message)
+                update.message.reply_text(message, ParseMode.HTML)
         except (error.TimedOut, error.BadRequest, error.InvalidToken, error.Unauthorized, error.NetworkError, error.Conflict) as err:
             self.logger_bot.error(f'TelegramBot: status_alarm Ошибка подключения к сети интерет: {err}') 
     
@@ -369,14 +384,14 @@ class TelegramBot():
     def avtobus(self, update: Update, context: CallbackContext):
         """Send a message when the command /Avtobus is issued."""
         # Отправляем сообщение что выполняется snmp опрос оборудования 
-        update.message.reply_text('Выполняется...')
+        update.message.reply_text('Выполняется...', ParseMode.HTML)
         # Создаем экземпляр класса avtobus
         avtobus = ThreadSNMPAsk()
         # Вызываем у экземпляра класса avtobus метод sc200, который опрашивает устройство и 
         # возвращает результат, который записываем в переменную result
         result = avtobus.sc200('10.184.50.201', timeout=10, flag=True)
         # Отправляем результат запроса пользователю предварительно сделав замену ip адреса на имя устройства
-        update.message.reply_text(result.replace('10.184.50.201', 'ААУС Б.Тира (КП2)'))
+        update.message.reply_text(result.replace('10.184.50.201', 'ААУС Б.Тира (КП2)'), ParseMode.HTML)
 
     # Метод отправляет пользователю список текщих аварий
     def active_alarms(self, update: Update, context: CallbackContext):
@@ -389,17 +404,17 @@ class TelegramBot():
                 # Если длина списка меньше 21
                 if lenght < 21:
                     # Отправляем аварий полностью одной строкой
-                    update.message.reply_text(string_alarms)
+                    update.message.reply_text(string_alarms, ParseMode.HTML)
                 # Иначе, отправляем аварий по частям
                 else:
                     # Преобразуем строку с авариями в список
                     list_alarms = string_alarms.split('\n\n')
                     # Отправляем список аварий по частям предварительно перепреобразовав список в строку 
-                    update.message.reply_text('\n\n'.join(list_alarms[:21]))
-                    update.message.reply_text('\n\n'.join(list_alarms[21:]))
+                    update.message.reply_text('\n\n'.join(list_alarms[:21]), ParseMode.HTML)
+                    update.message.reply_text('\n\n'.join(list_alarms[21:]), ParseMode.HTML)
             else:
                 message = 'Текущие аварии отсутствуют'
-                update.message.reply_text(message)
+                update.message.reply_text(message, ParseMode.HTML)
         except (error.TimedOut, error.BadRequest, error.InvalidToken, error.Unauthorized, error.NetworkError, error.Conflict) as err:
             self.logger_bot.error(f'TelegramBot: active_alarms Ошибка подключения к сети интерет: {err}') 
         # Попадаем в исключение откуда получаем код ошибки, который говорит, что запрошено слишком длинное сообщение для отправки
@@ -415,7 +430,7 @@ class TelegramBot():
         self.lost_percent=0
         self.lost_percent=0
         try:
-            update.message.reply_text('Статистика очищена')
+            update.message.reply_text('Статистика очищена', ParseMode.HTML)
         except (error.TimedOut, error.BadRequest, error.InvalidToken, error.Unauthorized, error.NetworkError, error.Conflict) as err:
             self.logger_bot.error(f'TelegramBot: clear Ошибка подключения к сети интерет: {err}') 
     
@@ -432,7 +447,9 @@ class TelegramBot():
 
 if __name__ == '__main__':
 
-    bot = TelegramBot("1727811223:AAF2FiV8XkXX2wErJxnsXX0xBg_JARNvJ4M")
+    bot = TelegramBot("5412146072:AAF8TW4mDK_N7folBpjVmN1sAGG6fDlV_iU")
+    bot.send_message('489848468', f'*Привет*')
+    #bot.send_message(update.effective_message.chat_id, *args, **kwargs)
     #bot.run()
     #print('HJHJJHh')
     #print(bot._read_file( r'D:\Users\Ivond\Documents\Python\Application\SNMP Ask\db_alarm.json'))
