@@ -56,7 +56,7 @@
      </font>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="tab_6">
      <attribute name="title">
@@ -2333,6 +2333,11 @@ p, li { white-space: pre-wrap; }
         </item>
         <item>
          <property name="text">
+          <string>APC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>Eaton</string>
          </property>
         </item>
@@ -2509,7 +2514,7 @@ p, li { white-space: pre-wrap; }
          <rect>
           <x>5</x>
           <y>0</y>
-          <width>370</width>
+          <width>141</width>
           <height>29</height>
          </rect>
         </property>
@@ -2708,6 +2713,19 @@ p, li { white-space: pre-wrap; }
          <string>Выберите устройство</string>
         </property>
        </widget>
+       <widget class="QCheckBox" name="checkBox">
+        <property name="geometry">
+         <rect>
+          <x>180</x>
+          <y>3</y>
+          <width>191</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Низко нагруженный порт</string>
+        </property>
+       </widget>
       </widget>
      </widget>
      <widget class="QWidget" name="verticalLayoutWidget">
@@ -2796,6 +2814,11 @@ p, li { white-space: pre-wrap; }
       <item>
        <property name="text">
         <string>Forpost_3</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>APC</string>
        </property>
       </item>
       <item>
