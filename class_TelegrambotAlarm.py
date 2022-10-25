@@ -57,8 +57,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
                 line = self.forpost(ip, timeout=5, flag=True)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
-                # Делаем подмену ip адреса на host_name
-                #result = line.replace(line.split()[2], description)
                 # Формируем строку сообщения 
                 massege = f"{date} {host_name} {description}"
                 # Добавляем сообщение в список status_alarm
@@ -66,8 +64,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'forpost_2':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.forpost_2(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -77,8 +73,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'forpost_3':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.forpost_3(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -88,8 +82,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'eaton':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.eaton(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -99,8 +91,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'sc200':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.sc200(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -110,8 +100,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'legrand':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.legrand(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -121,8 +109,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'apc':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.apc(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -132,8 +118,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'eltek':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.eltek(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -143,8 +127,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'macc':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.macc(ip, timeout=5, flag=True)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
@@ -154,8 +136,6 @@ class TelegramBotAlarmStatus(ThreadSNMPAsk):
             elif model == 'modbus':
                 # Вызываем метод и получаем значение параметров, которые записываем в переменную line
                 line = self.modbus(ip, time_out=5)
-                # Делаем подмену ip адреса на description
-                #result = line.replace(line.split()[2], description)
                 # Вызываем метод _parse_message передаем на вход вывод SNMP запроса, получаем дату и параметры 
                 date, description = self._parse_message(line)
                 # Формируем строку сообщения 
