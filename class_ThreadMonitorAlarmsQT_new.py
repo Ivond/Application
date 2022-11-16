@@ -73,18 +73,16 @@ class ThreadMonitorAlarms(QThread):
                 self.logger_err.error("Ошибка запроса из БД: sql.get_values_list_db('data', table='Interim')")
                 # Если попали в исключение значит не смогли получить данные из БД, тогда подставляем словарь   
                 self.dict_interim_messages = {'power_alarm':{},
-                                        'low_voltage':{},
-                                        'limit_oil':{},
-                                        'alarm_stop_of_motor':{},
-                                        'hight_temp':{},
-                                        'low_temp':{},
-                                        'low_signal_power':{},
-                                        'channel': {},
-                                        'dgu': {},
-                                        'error': {}
-                                        }
-        # Словарь для хранения параметров по ДГУ АВТОБУС
-        self.dict_DGU = {}
+                                                'low_voltage':{},
+                                                'limit_oil':{},
+                                                'alarm_stop_of_motor':{},
+                                                'hight_temp':{},
+                                                'low_temp':{},
+                                                'low_signal_power':{},
+                                                'channel': {},
+                                                'dgu': {},
+                                                'error': {}
+                                                }
         # Записываем результат snmp опроса оборудования в список 
         self.snmp_traps = []
 
@@ -214,7 +212,7 @@ class ThreadMonitorAlarms(QThread):
     # Функция из полученных данных парсит значение даты, все параметры оборудования и возвращает эти значения
     def _parse_message(self, line):
         match = re.match(r'^(?P<date>[\d+\-*]+ +[\d+\:*]+) .+(?P<description>IN.+)', line)
-        match1 = re.match(r'^(?P<date>[\d+\-*]+ +[\d+\:*]+) .+(?P<description>ОПС.+)', line)
+        match1 = re.match(r'^(?P<date>[\d+\-*]+ +[\d+\:*]+) .+(?P<description>ОПС.+)Двиг', line)
         match2 = re.match(r'^(?P<date>[\d+\-*]+ +[\d+\:*]+) .+(?P<description>TxFiber2.+)', line)
         match3 = re.match(r'^(?P<date>[\d+\-*]+ +[\d+\:*]+) .+(?P<description>ДГУ:.+):', line)
         match4 = re.match(r'^(?P<date>[\d+\-*]+ +[\d+\:*]+) .+(?P<description>OperStatus.+)', line)
@@ -507,9 +505,12 @@ class ThreadMonitorAlarms(QThread):
                                 or (counter - self.dict_interim_messages['low_signal_power'][ip][1]) == self.num + 1):
                                 # Вызываем метод parse_message получаем дату и значение парамеров с оборудования
                                 date, description = self._parse_message(line)
-                                # Формируем сообщение которое отпавим пользователю
-                                message = f"{date} {self.name}: <b>Низкий уровень сигнала транспондера MAC&C</b> {description}."
-                                # Отправляем сообщение
+                                if int(rx_fiber2) < self.signal_level_fiber:
+                                    # Формируем сообщение которое отпавим пользователю
+                                    message = f"{date} {self.name}: <b>Низкий уровень сигнала транспондера MAC&C</b> {description.replace('RxFiber2: {} dBm'.format(rx_fiber2), '<b>RxFiber2: {} dBm</b>'.format(rx_fiber2))}"
+                                if int(rx_fiber3) < self.signal_level_fiber:
+                                    # Формируем сообщение которое отпавим пользователю
+                                    message = f"{date} {self.name}: <b>Низкий уровень сигнала транспондера MAC&C</b> {description.replace('RxFiber3: {} dBm'.format(rx_fiber3), '<b>RxFiber3: {} dBm</b>'.format(rx_fiber3))}"
                                 code_status = self._sender(message)
                                 if code_status == 200:                        
                                     # Добавляем данные об аварии в dict_messages
@@ -549,8 +550,12 @@ class ThreadMonitorAlarms(QThread):
                         if temp_fiber2 and temp_fiber3 and (int(temp_fiber2) > self.hight_temp_fiber or int(temp_fiber3) > self.hight_temp_fiber) and ip not in self.dict_messages['hight_temp']:
                             # Вызываем метод parse_message получаем дату и значение парамеров с оборудования
                             date, description = self._parse_message(line)
-                            # Формируем сообщение которое отправим пользователю
-                            message = f"{date} {self.name}: <b>Высокая температура транспондера MAC&C</b> {description}."
+                            if int(temp_fiber2) > self.hight_temp_fiber:
+                                # Формируем сообщение которое отправим пользователю
+                                message = f"{date} {self.name}: <b>Высокая температура транспондера MAC&C</b> {description.replace('TempFiber2: {} *C'.format(temp_fiber2), '<b>TempFiber2: {} *C</b>'.format(temp_fiber2))}"
+                            if int(temp_fiber3) > self.hight_temp_fiber:
+                                # Формируем сообщение которое отправим пользователю
+                                message = f"{date} {self.name}: <b>Высокая температура транспондера MAC&C</b> {description.replace('TempFiber3: {} *C'.format(temp_fiber3), '<b>TempFiber3: {} *C</b>'.format(temp_fiber3))}"
                             # Отправляем сообщение
                             status_code = self._sender(message)
                             if status_code == 200:
@@ -567,8 +572,12 @@ class ThreadMonitorAlarms(QThread):
                         if temp_fiber2 and temp_fiber3 and (int(temp_fiber2) < self.low_temp_fiber or int(temp_fiber3) < self.low_temp_fiber) and ip not in self.dict_messages['low_temp']:
                             # Вызываем метод parse_message получаем дату и значение парамеров с оборудования
                             date, description = self._parse_message(line)
-                            # Формируем сообщение которое отпавим пользователю
-                            message = f"{date} {self.name}: Низкая температура транспондера MAC&C: {description}."
+                            if int(temp_fiber2) < self.low_temp_fiber:
+                                # Формируем сообщение которое отпавим пользователю
+                                message = f"{date} {self.name}: Низкая температура транспондера MAC&C: {description.replace('TempFiber2: {} *C'.format(temp_fiber2), '<b>TempFiber2: {} *C</b>'.format(temp_fiber2))}"
+                            if int(temp_fiber3) < self.low_temp_fiber:
+                                # Формируем сообщение которое отпавим пользователю
+                                message = f"{date} {self.name}: Низкая температура транспондера MAC&C: {description.replace('TempFiber3: {} *C'.format(temp_fiber3), '<b>TempFiber3: {} *C</b>'.format(temp_fiber3))}"
                             # Отправляем сообщение
                             status_code = self._sender(message)
                             if status_code == 200:
@@ -617,6 +626,7 @@ class ThreadMonitorAlarms(QThread):
                     # ПРОВЕРКА НА ОШИБКИ ИБЭП
 
                     elif 'SNMP:REQEST_ERROR' in line:
+                        # TODO something smart
                         pass        
                 
                 # ПРОВЕРКА ПАРАМЕТРОВ ДГУ
@@ -647,7 +657,7 @@ class ThreadMonitorAlarms(QThread):
                             # Вызываем метод _parse_message передав ему строку вывода с оборудования, получаем дату и описание и записываем их в переменные
                             date, description = self._parse_message(line)
                             # Формируем сообщение, которое будет отправленно пользователям
-                            message = f"{date} <b>{self.name}: Низкий уровень топлива:</b> {description}"
+                            message = f"{date} <b>{self.name}: Низкий уровень топлива:</b> {description.replace('Топл.:{}%'.format(limit_oil), '<b>Топл.:{}%<b>'.format(limit_oil))}"
                             # Отправляем сообщение
                             status_code = self._sender(message)
                             if status_code == 200:
@@ -703,7 +713,7 @@ class ThreadMonitorAlarms(QThread):
                             # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
                             date, description = self._parse_message(line)
                             # Формируем сообщение которое отпавим пользователю
-                            message = f"{date} </b>{self.name}: Аварийный останов двигателя.</b>"
+                            message = f"{date} </b>{self.name}: ЭКСТРЕННАЯ ОСТАНОВКА ДВИГАТЕЛЯ</b>"
                             # Отправляем сообщение
                             status_code = self._sender(message)
                             if status_code == 200:
@@ -713,7 +723,7 @@ class ThreadMonitorAlarms(QThread):
                             # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
                             date, description = self._parse_message(line)
                             # Формируем сообщение которое отпавим пользователю
-                            message = f"{date} </b>{self.name}: Аварийный останов двигателя.</b>"
+                            message = f"{date} </b>{self.name}: ЭКСТРЕННАЯ ОСТАНОВКА ДВИГАТЕЛЯ</b>"
                             # Отправляем сообщение
                             status_code = self._sender(message)
                             if status_code == 200:
@@ -970,7 +980,7 @@ class ThreadMonitorAlarms(QThread):
                                 # Получаем дату и описание аварии вызвав метод _parse_message
                                 date, description = self._parse_message(line)
                                 # Формируем сообщение для отправки
-                                message = f"{date} <b>{self.name}: Отключение электроэнергии:</b> {description}"
+                                message = f"{date} <b>{self.name}: Отключение электроэнергии:</b> {description.replace('IN: {} V'.format(voltage_in), '<b>IN: {} V</b>'.format(voltage_in))}"
                                 # Отправляем сообщение
                                 status_code = self._sender(message)
                                 if status_code == 200:
@@ -990,7 +1000,7 @@ class ThreadMonitorAlarms(QThread):
                                 # Получаем дату и описание аварии вызвав метод _parse_message
                                 date, description = self._parse_message(line)
                                 # Формируем сообщение для отправки
-                                message = f"{date} <b>{self.name}: Низкое напряжение:</b> {description}"
+                                message = f"{date} <b>{self.name}: Низкое напряжение:</b> {description.replace('OUT: {} V'.format(voltage_out), '<b>OUT: {} V</b>'.format(voltage_out))}"
                                 # Отправляем сообщение
                                 status_code = self._sender(message)
                                 if status_code == 200:
@@ -1015,7 +1025,7 @@ class ThreadMonitorAlarms(QThread):
                                 # Определяем время работы на АКБ вызвав метод _battery_operating_time
                                 battery_time = self._battery_operating_time(ip, date)
                                 # Формируем сообщение для отправки
-                                message = f"{date} <b>{self.name}: Электричество восстановлено:</b> {description}. Время работы на АКБ {battery_time}"
+                                message = f"{date} <b>{self.name}: Электричество восстановлено:</b> {description}. <b>Время работы на АКБ {battery_time}</b>"
                                 # Отправляем сообщение
                                 status_code = self._sender(message)
                                 if status_code == 200:
@@ -1045,7 +1055,7 @@ class ThreadMonitorAlarms(QThread):
                             # Вызываем метод _parse_message передав ему строку с выводом с оборудования и получаем дату и описание
                             date, description = self._parse_message(line)
                             # Формируем сообщение для отправки
-                            message = f"{date} {self.name}: Высокая температура: {description}"
+                            message = f"{date} {self.name}: Высокая температура: {description.replace('*C: {}'.format(temp_value), '<b>*C: {}</b>'.format(temp_value))}"
                             # Отправляем сообщение
                             code_status = self._sender(message)
                             if code_status == 200:
@@ -1075,7 +1085,7 @@ class ThreadMonitorAlarms(QThread):
                             # Вызываем метод _parse_message передав ему строку с выводом с оборудования и получаем дату и описание
                             date, description = self._parse_message(line)
                             # Формируем сообщение для отправки
-                            message = f"{date} {self.name}: Низкая температура: {description}"
+                            message = f"{date} {self.name}: Низкая температура: {description.replace('*C: {}'.format(temp_value), '<b>*C: {}</b>'.format(temp_value))}"
                             # Отправляем сообщение
                             status_code = self._sender(message)
                             if status_code == 200:
