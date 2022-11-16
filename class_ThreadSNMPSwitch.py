@@ -127,13 +127,6 @@ class ThreadSNMPSwitch(QThread):
                     sample['outbound']=[out_bit_sec]
                     #
                     pretty_out_bit_sec = self.pretty_counters(out_bit_sec)
-            #dt = datetime.now()
-            #hour = dt.hour
-            # Добавляем значеие в словарь списков
-            #sample['hour']=[hour]
-            #minute = dt.minute
-            # Добавляем значеие в словарь списков
-            #sample['minute']=minute]
             # Если Истино
             if load:
                 # Просим нашу модель предсказать статус канала принимает на вход словарь списков
@@ -168,20 +161,23 @@ class ThreadSNMPSwitch(QThread):
     # Метод вычисляет количество исходящего трафика на порту
     def out_traffic_count(self, ip_addr, port, out_octets):
         with ConnectSqlDB() as sql:
-            # Делаем запрос к БД получаем количество исходящего трафика 
-            out_octets_before = sql.get_db('traffic_out', ip=ip_addr, port=port, table='Ports')[0][0]
-            if out_octets_before:
-                # Вычисляем количества исходящего трафика на порту отняв текущее значение от предыдущего
-                out_bit_sec = out_octets - out_octets_before
-                # Делаем запрос к БД таблица Ports обновляем значение количества входящего трафика
-                sql.add_traffic('traffic_out', ip=ip_addr, port=port, traffic=out_octets)
-                # Возвращаем значение количества трафика
-                return out_bit_sec
-            else:
-                # Делаем запрос к БД таблица Ports добавляем значение количества трафика
-                sql.add_traffic('traffic_out', ip=ip_addr, port=port, traffic=out_octets)
-                # Возращаем то значение которое функция приняла на вход
-                return out_octets
+            try:
+                # Делаем запрос к БД получаем количество исходящего трафика 
+                out_octets_before = sql.get_db('traffic_out', ip=ip_addr, port=port, table='Ports')[0][0]
+                if out_octets_before:
+                    # Вычисляем количества исходящего трафика на порту отняв текущее значение от предыдущего
+                    out_bit_sec = out_octets - out_octets_before
+                    # Делаем запрос к БД таблица Ports обновляем значение количества входящего трафика
+                    sql.add_traffic('traffic_out', ip=ip_addr, port=port, traffic=out_octets)
+                    # Возвращаем значение количества трафика
+                    return out_bit_sec
+                else:
+                    # Делаем запрос к БД таблица Ports добавляем значение количества трафика
+                    sql.add_traffic('traffic_out', ip=ip_addr, port=port, traffic=out_octets)
+                    # Возращаем то значение которое функция приняла на вход
+                    return out_octets
+            except IndexError:
+                pass
 
     # Метод преобразует значение из бит/c в Кбит/c или Мбит/c 
     def pretty_counters(self, bit_sec):
