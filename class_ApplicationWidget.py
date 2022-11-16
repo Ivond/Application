@@ -368,62 +368,17 @@ class AplicationWidget:
         self.icon_menu_exit.addFile(self.path_icon_menu_exit)
         self.icon_close_page.addFile(self.path_icon_close_page)
 
-        # ДИАЛОГОВЫЕ ОКНА ВЫВОДА АВАРИЙ В ОКНО SECONDWINDOW 
+        # Окно для тестов
+        self.test_font_size = QMessageBox()
+        self.test_font_size.setWindowTitle('Авария')
+        self.test_font_size.setText('Авария')
+        self.test_font_size.setIcon(QMessageBox.Critical)
+        self.test_font_size.setWindowIcon(self.icon_err)
 
-        # Низкое напряжение АКБ
-        self.critical_alarm_low_valtage = QMessageBox()
-        self.critical_alarm_low_valtage.setWindowTitle('Авария')
-        self.critical_alarm_low_valtage.setText('Авария')
-        self.critical_alarm_low_valtage.setIcon(QMessageBox.Critical)
-        self.critical_alarm_low_valtage.setWindowIcon(self.icon_err)
-        # Низкий уровень сигнала транспондера MAC&C
-        self.critical_alarm_fiber_low_level = QMessageBox()
-        self.critical_alarm_fiber_low_level.setWindowTitle('Авария')
-        self.critical_alarm_fiber_low_level.setText('Авария')
-        self.critical_alarm_fiber_low_level.setIcon(QMessageBox.Critical)
-        self.critical_alarm_fiber_low_level.setWindowIcon(self.icon_err)
-        # Высокая температура транспондера MAC&C
-        self.critical_alarm_temp_fiber = QMessageBox()
-        self.critical_alarm_temp_fiber.setWindowTitle('Авария')
-        self.critical_alarm_temp_fiber.setText('Авария')
-        self.critical_alarm_temp_fiber.setIcon(QMessageBox.Critical)
-        self.critical_alarm_temp_fiber.setWindowIcon(self.icon_err)
-        # Низкое давление масла
-        self.critical_alarm_low_pressure_oil = QMessageBox()
-        self.critical_alarm_low_pressure_oil.setWindowTitle('Авария')
-        self.critical_alarm_low_pressure_oil.setText('Авария')
-        self.critical_alarm_low_pressure_oil.setIcon(QMessageBox.Critical)
-        self.critical_alarm_low_pressure_oil.setWindowIcon(self.icon_err)
-        # Низкий уровень топлива
-        self.critical_alarm_low_level_oil = QMessageBox()
-        self.critical_alarm_low_level_oil.setWindowTitle('Авария')
-        self.critical_alarm_low_level_oil.setText('Авария')
-        self.critical_alarm_low_level_oil.setIcon(QMessageBox.Critical)
-        self.critical_alarm_low_level_oil.setWindowIcon(self.icon_err)
-        # Аварийный останов двигателя
-        self.critical_alarm_motor_work = QMessageBox()
-        self.critical_alarm_motor_work.setWindowTitle('Авария')
-        self.critical_alarm_motor_work.setText('Авария')
-        self.critical_alarm_motor_work.setIcon(QMessageBox.Critical)
-        self.critical_alarm_motor_work.setWindowIcon(self.icon_err)
-        # Низкий уровень О/Ж
-        self.critical_alarm_level_water = QMessageBox()
-        self.critical_alarm_level_water.setWindowTitle('Авария')
-        self.critical_alarm_level_water.setText('Авария')
-        self.critical_alarm_level_water.setIcon(QMessageBox.Critical)
-        self.critical_alarm_level_water.setWindowIcon(self.icon_err)
-        # Низкая температура О/Ж
-        self.critical_alarm_low_temp_water = QMessageBox()
-        self.critical_alarm_low_temp_water.setWindowTitle('Авария')
-        self.critical_alarm_low_temp_water.setText('Авария')
-        self.critical_alarm_low_temp_water.setIcon(QMessageBox.Critical)
-        self.critical_alarm_low_temp_water.setWindowIcon(self.icon_err)
-        # Высокая температура О/Ж
-        self.critical_alarm_hi_temp_water = QMessageBox()
-        self.critical_alarm_hi_temp_water.setWindowTitle('Авария')
-        self.critical_alarm_hi_temp_water.setText('Авария')
-        self.critical_alarm_hi_temp_water.setIcon(QMessageBox.Critical)
-        self.critical_alarm_hi_temp_water.setWindowIcon(self.icon_err)
+
+if __name__ == "__main__":
+    show = AplicationWidget()
+    show.show()
 
         
 
