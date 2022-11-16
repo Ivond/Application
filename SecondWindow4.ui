@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>695</width>
+    <width>1281</width>
     <height>600</height>
    </rect>
   </property>
@@ -243,11 +243,25 @@ p, li { white-space: pre-wrap; }
        <number>100</number>
       </property>
       <property name="leftMargin">
-       <number>400</number>
+       <number>100</number>
       </property>
       <property name="rightMargin">
-       <number>0</number>
+       <number>50</number>
       </property>
+      <item>
+       <widget class="QCheckBox" name="Hidden_message_check_box">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Не выводить аварию в отдельном окне</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QPushButton" name="switch_off_sound_btn">
         <property name="maximumSize">
@@ -265,6 +279,18 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="text">
          <string>Остановить мелодию</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="repeat_sound">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Повторять мелодию</string>
         </property>
        </widget>
       </item>
@@ -289,7 +315,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>695</width>
+     <width>1281</width>
      <height>21</height>
     </rect>
    </property>
