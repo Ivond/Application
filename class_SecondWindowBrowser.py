@@ -6,9 +6,9 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 from SecondWindow import Ui_MainWindow
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, Qt 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QMessageBox
 from class_SqlLiteMain import ConnectSqlDB
 from class_WindPlaySound import WindPlaySound
 from class_ApplicationWidget import AplicationWidget
@@ -68,7 +68,12 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
         self.font_size_frame4 = self.textBrowser_3.styleSheet().split()[-2].rstrip('pt')
         # Получаем стили ширифта примененные для окна textBrowser_6, получаем значение размера ширифта и записываем в переменную
         self.font_size_alarm = self.textBrowser_6.styleSheet().split()[-2].rstrip('pt')
-        
+        # Создаем переменную в которую записываем значение размера шрифта текста сообщения диалогового окна, значение присваивается из класса Application
+        # по умолчанию не установлено
+        self.font_size_message_alarm = None 
+        # Количество подтверждений аварии перед тем как она отобразится
+        self.num = 2
+    
         # Создаем экзепляр класса WindPlaySound
         self.play_sound = WindPlaySound()
         # Создаем экземпляр классса Таймер запуска метода run
@@ -111,7 +116,23 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                                     'low_signal_power':{},
                                     'request_err':{},
                                     }
-        # Словарь для хранения информации для какого типа аварии и ip адреса воспроизводилась мелодия. 
+        #                      
+        self.dict_interim_messages = {'power_alarm':{},
+                                    'low_voltage':{},
+                                    'hight_voltage':{},
+                                    'low_oil':{},
+                                    'motor': {},
+                                    'level_water': {},
+                                    'low_pressure_oil': {},
+                                    'low_temp_water': {},
+                                    'hi_temp_water': {},
+                                    'hight_temp':{},
+                                    'low_temp':{},
+                                    'low_signal_power':{},
+                                    'request_err':{},
+                                    }
+
+        # Словарь для хранения ip адресов устройств для которых воспроизводилась мелодия. 
         self.dic_alarm_sound = {'power_alarm': {},
                                 'low_voltage': {},
                                 'low_signal_power': {},
@@ -126,8 +147,9 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                                 'hight_voltage':{},
                                 'low_temp':{},
                                 }
-        # Словарь для хранения информации для какого типа аварии и ip адреса выводилось диалоговое окно.
-        self.dic_massege_box = {'low_voltage': {},
+        # Словарь для хранения информации ip адресов устройств для которых выводилось диалоговое окно.
+        self.dic_massege_box = {'power_alarm': {},
+                                'low_voltage': {},
                                 'low_signal_power': {},
                                 'hight_temp': {},
                                 'motor': {},
@@ -136,6 +158,9 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                                 'low_temp_water': {},
                                 'hi_temp_water': {},
                                 'low_oil': {},
+                                'request_err': {},
+                                'hight_voltage':{},
+                                'low_temp':{},
                                 }
         # Переменная список куда записываем результат опроса snmp
         self.snmp_traps = []
@@ -172,39 +197,47 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
         # Добавляем в статус бар наш экземпляр класса lbl_clock
         self.statusbar.addPermanentWidget(self.lbl_clock)
         # Кнопка отключения мелодии звука
-        self.switch_off_sound_btn.pressed.connect(self._presse_stop_sound)
+        self.switch_off_sound_btn.pressed.connect(self._presse_button_confirm_all_alarms)
 
         # ДОБАВЛЕНИЕ ИКОНКИ К КНОПКЕ
         self.switch_off_sound_btn.setIcon(self.icon_sound_stop)
-
-        # Вызываем у экземпляра класса QMessageBox() метод buttonClicked(сигнал) и спомощью connect прикрепляем к нему 
-        # метод click_btn, котрый будет срабатывать при каждом вызове(нажатии) сигнала buttonClicked, т.е. нажатие на кнопки.
-        self.critical_alarm_low_valtage.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_fiber_low_level.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_temp_fiber.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_low_pressure_oil.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_low_level_oil.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_motor_work.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_level_water.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_low_temp_water.buttonClicked.connect(self.click_btn)
-        self.critical_alarm_hi_temp_water.buttonClicked.connect(self.click_btn)
-
-    # Метод обрабатывает нажатие кнопок в диалоговом окне, останавливает воспроизведение мелодии
+        
+        # Создаем экземпляр класса QScrollBar, который позволит обратиться к  вертикальной полосе прокрутки Окна №1,2,3,4 textBrowser
+        self.vertScrollBarWind2 = self.textBrowser.verticalScrollBar()
+        self.vertScrollBarWind1 = self.textBrowser_3.verticalScrollBar()
+        self.vertScrollBarWind3 = self.textBrowser_2.verticalScrollBar()
+        self.vertScrollBarWind4 = self.textBrowser_4.verticalScrollBar()
+        self.vertScrollBarWind5 = self.textBrowser_5.verticalScrollBar()
+        self.vertScrollBarWind6 = self.textBrowser_6.verticalScrollBar()
+        # При наведении курсора мыши на полосу прокрутки будет появляться значек руки
+        self.vertScrollBarWind2.setCursor(Qt.OpenHandCursor)
+        self.vertScrollBarWind1.setCursor(Qt.OpenHandCursor)
+        self.vertScrollBarWind3.setCursor(Qt.OpenHandCursor)
+        self.vertScrollBarWind4.setCursor(Qt.OpenHandCursor)
+        self.vertScrollBarWind5.setCursor(Qt.OpenHandCursor)
+        self.vertScrollBarWind6.setCursor(Qt.OpenHandCursor)
+        # actionTriggered вызывается когда полоса прокрутки изменяется в результате взаимодействия с пользователем
+        # прикрепляем к нему метод scroll, который будет вызываться при каждой сработке триггера. 
+        self.vertScrollBarWind1.actionTriggered.connect(self.scroll_wind_1)
+        self.vertScrollBarWind2.actionTriggered.connect(self.scroll_wind_2)
+        self.vertScrollBarWind3.actionTriggered.connect(self.scroll_wind_3)
+        self.vertScrollBarWind4.actionTriggered.connect(self.scroll_wind_4)
+        self.vertScrollBarWind5.actionTriggered.connect(self.scroll_wind_5)
+        self.vertScrollBarWind6.actionTriggered.connect(self.scroll_wind_6)
+        # Устанавливаем первоначальное положение ползунка в верхнее положение для всех окон
+        self.position_scroll_wind1 = 0
+        self.position_scroll_wind2 = 0
+        self.position_scroll_wind3 = 0
+        self.position_scroll_wind4 = 0
+        self.position_scroll_wind5 = 0
+        self.position_scroll_wind6 = 0
+        
+    # Метод обрабатывает нажатие кнопок "ОК" в диалоговом окне, останавливает воспроизведение мелодии
     def click_btn(self, btn):
         # Удаление пользователя
         if btn.text() == 'OK':
-            print('click_btn: Close massege')
-            # Вызываем метод который останавливает воспроизведение мелодии.
-            self._presse_stop_sound()
-            print('click_btn: Stop sound')
-
-    # Метод выводит диалоговое окно с сообщением об аврии
-    def _show_massege_box(self, class_instance, host_name, description):
-        print('_show_massege_box: Show massege')
-        # Подставляем текст сообщения который будет выводится в Диалоговом окне 
-        class_instance.setText(f'<b style="font-size:72px">{host_name}: {description}</b>')
-        # Выводим диалоговое окно
-        class_instance.show()
+            # Вызываем метод который подтверждает аврию.
+            self._press_button_confirm_alarm()
 
     # Метод получает имя устройства, которое соответствует ip адресу переданному на вход
     def _dns(self, ip):
@@ -221,24 +254,95 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
             # Делаем запрос к БД, получаем номер окна куда выводить аврию
             window_number= sql.get_db('num_window', ip=ip, table='Devices')[0]
         return window_number
+    
+    # Метод фиксирует положение ползунка полосы прокрутки после изменения его положения пользователем в Окне №1
+    def scroll_wind_1(self):
+        # Метод изменяет положение полосы прокрутки (вверх или вниз), когда пользователь прокручивает scroll мыши
+        self.vertScrollBarWind1.setSingleStep(25)
+        # Определяем значение положение полосы прокрутки scroll
+        self.position_scroll_wind1 = self.vertScrollBarWind1.sliderPosition()
+        # Устанавливаем положение ползунка полосы прокрутки
+        self.vertScrollBarWind1.setSliderPosition(self.position_scroll_wind1)
 
+    # Метод фиксирует положение ползунка полосы прокрутки после изменения его положения пользователем в Окне №2
+    def scroll_wind_2(self):
+        # Метод изменяет положение полосы прокрутки (вверх или вниз), когда пользователь прокручивает scroll мыши
+        self.vertScrollBarWind2.setSingleStep(25)
+        # Определяем значение положения полосы прокрутки
+        self.position_scroll_wind2 = self.vertScrollBarWind2.sliderPosition()
+        # Устанавливаем положение ползунка полосы прокрутки
+        self.vertScrollBarWind2.setSliderPosition(self.position_scroll_wind2)
+    
+    # Метод фиксирует положение ползунка полосы прокрутки после изменения его положения пользователем в Окне №3
+    def scroll_wind_3(self):
+        # Метод изменяет положение полосы прокрутки (вверх или вниз), когда пользователь прокручивает scroll мыши
+        self.vertScrollBarWind3.setSingleStep(25)
+        # Определяем значение положения полосы прокрутки
+        self.position_scroll_wind3 = self.vertScrollBarWind3.sliderPosition()
+        # Устанавливаем положение ползунка полосы прокрутки
+        self.vertScrollBarWind3.setSliderPosition(self.position_scroll_wind3)
+
+    # Метод фиксирует положение ползунка полосы прокрутки после изменения его положения пользователем в Окне №4
+    def scroll_wind_4(self):
+        # Метод изменяет положение полосы прокрутки (вверх или вниз), когда пользователь прокручивает scroll мыши
+        self.vertScrollBarWind4.setSingleStep(25)
+        # Определяем значение положения полосы прокрутки
+        self.position_scroll_wind4 = self.vertScrollBarWind4.sliderPosition()
+        # Устанавливаем положение ползунка полосы прокрутки
+        self.vertScrollBarWind4.setSliderPosition(self.position_scroll_wind4)
+
+    # Метод фиксирует положение ползунка полосы прокрутки после изменения его положения пользователем во вкладке "Текущие аварии"
+    def scroll_wind_5(self):
+        # Метод изменяет положение полосы прокрутки (вверх или вниз), когда пользователь прокручивает scroll мыши
+        self.vertScrollBarWind5.setSingleStep(25)
+        # Определяем значение положения полосы прокрутки
+        self.position_scroll_wind5 = self.vertScrollBarWind5.sliderPosition()
+        # Устанавливаем положение ползунка полосы прокрутки
+        self.vertScrollBarWind5.setSliderPosition(self.position_scroll_wind5)
+
+    # Метод фиксирует положение ползунка полосы прокрутки после изменения его положения пользователем во вкладке "Текущие аварии"
+    def scroll_wind_6(self):
+        # Метод изменяет положение полосы прокрутки (вверх или вниз), когда пользователь прокручивает scroll мыши
+        self.vertScrollBarWind6.setSingleStep(25)
+        # Определяем значение положения полосы прокрутки
+        self.position_scroll_wind6 = self.vertScrollBarWind6.sliderPosition()
+        # Устанавливаем положение ползунка полосы прокрутки
+        self.vertScrollBarWind6.setSliderPosition(self.position_scroll_wind6)
+
+    @QtCore.pyqtSlot(int)
     # Метод выводит строки сообщения в одно из окон во вкладке Общая информация 
     def _show_message_on_window(self, num_window, message):
         if num_window == 1:
             # Выводим аварийное сообщение во вкладку All devices
             self.textBrowser_3.append(message)
+            # Устанавливаем положение ползунка полосы прокрутки ScrollBar
+            #self.textBrowser_3.verticalScrollBar().setSliderPosition(self.position_scroll_wind1)
+            # Устанавливаем положение ползунка полосы прокрутки
+            self.vertScrollBarWind1.setSliderPosition(self.position_scroll_wind1)
         elif num_window == 2:
             # Выводим аварийное сообщение во вкладку All devices
             self.textBrowser.append(message)
+            # Устанавливаем положение ползунка полосы прокрутки ScrollBar
+            #self.textBrowser.verticalScrollBar().setSliderPosition(self.position_scroll_wind2)
+            # Устанавливаем положение ползунка полосы прокрутки
+            self.vertScrollBarWind2.setSliderPosition(self.position_scroll_wind2)
         elif num_window == 3:
             # Выводим аварийное сообщение во вкладку All devices
             self.textBrowser_2.append(message)
+            # Устанавливаем положение ползунка полосы прокрутки ScrollBar
+            #self.textBrowser_2.verticalScrollBar().setSliderPosition(self.position_scroll_wind3)
+            # Устанавливаем положение ползунка полосы прокрутки
+            self.vertScrollBarWind3.setSliderPosition(self.position_scroll_wind3)
         elif num_window == 4:
             # Выводим аварийное сообщение во вкладку All devices
             self.textBrowser_4.append(message)
+            # Устанавливаем положение ползунка полосы прокрутки
+            self.vertScrollBarWind4.setSliderPosition(self.position_scroll_wind4)
         else:
             # Выводим аварийное сообщение во вкладку All devices
             self.textBrowser_4.append(message) 
+            # Устанавливаем положение ползунка полосы прокрутки
+            self.vertScrollBarWind4.setSliderPosition(self.position_scroll_wind4)
     
     # Метод выводит строки сообщения в окно во вкладке Текущие аварии
     def _show_message_in_window_current_alarm(self, message):
@@ -250,9 +354,13 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
         if (size + 40) < geometry:
             # Выводим значение на экран в первый столбец
             self.textBrowser_6.append(message)
+            # Устанавливаем положение ползунка полосы прокрутки
+            self.vertScrollBarWind6.setSliderPosition(self.position_scroll_wind6)
         else:
             # Иначе, если количество аварий привышает высоту экрана, то выводим значение на экран во второй столбец
             self.textBrowser_5.append(message)
+            # Устанавливаем положение ползунка полосы прокрутки
+            self.vertScrollBarWind5.setSliderPosition(self.position_scroll_wind5)
 
     # Метод получает значение ip адреса устройства
     def _parse_ip(self, line):
@@ -311,7 +419,7 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
             sec %= 60
             return f'00:00:{int(sec)}'
     
-    # Метод получает дату и время и возвращает заачение в нужном формате
+    # Метод получает дату и время и возвращает значение в нужном формате
     def _get_date_time(self):
         # Получаем кортеж с датой, временем и т.д.
         date_tuple = time.localtime()
@@ -471,6 +579,14 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
         elif match2:
             description = match2.group('description').strip()
             return description
+
+    # Метод возращает количество итераций цикла, принимает на вход строку со значениями полученными от ThreaSNMPAsk
+    def _parse_count(self, line) -> int:
+        # Получаем количество итераций цикла из строки полученной от ThreadSNMPSWitch
+        match = re.match(r'.+Count: (?P<count>\d*)', line)
+        if match:
+            count = match.group('count')
+            return int(count)
     
     # Метод преобразует дату и время в строку и подставляет ее значение в меню Статус Бар
     def show_clock(self) ->str:
@@ -481,39 +597,39 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
         # В экземпляр класса QLable подставляем изображение и полученную дату и время
         self.lbl_clock.setText('<img src="{}" width="20" height="20"> <strong>{}</strong>'.format(self.path_icon_time, date))
     
-    # Метод вызывается при нажатии кнопки "Отключить мелодию" и останавливает воспроизведение мелодии
-    def _presse_stop_sound(self):
-        print('_presse_stop_sound: Stop sound')
-        # Проверяем если мелодия запущена
-        if self.play_sound.is_play():
-            # Отключаем воспроизведение мелодии
-            self.play_sound.stop()
-            self.play_sound.terminate()
-            # Обращаетмя к словарю dic_alarm_sound получаем список ключей
-            keys = list(self.dic_alarm_sound.keys())
-            # Проходимся по списку ключей
-            for key in keys:
-                # Обращаемся к словарю по ключу key, получаем словарь проверяем что если в словаре есть запись
-                if self.dic_alarm_sound[key]:
-                    # Обращаемся к словарю и проходимся по его ключам ip 
-                    for ip in self.dic_alarm_sound[key]:
-                        # Если значение равно 'Alarm'
-                        if self.dic_alarm_sound[key][ip] == 'Alarm':
-                            # Меняем значение с Alarm на Confirm, т.е. мы подтверждаем наличие аварий
-                            self.dic_alarm_sound[key][ip] = 'Confirm'
+    # Метод вызывается при нажатии кнопки "Отключить мелодию" подтверждает наличие всех аварий
+    def _presse_button_confirm_all_alarms(self):
+        # Обращаетмя к словарю dic_alarm_sound получаем список ключей
+        keys = list(self.dic_alarm_sound.keys())
+        # Проходимся по списку ключей
+        for key in keys:
+            # Обращаемся к словарю по ключу key, получаем словарь проверяем что если в словаре есть запись
+            if self.dic_alarm_sound[key]:
+                # Обращаемся к словарю и проходимся по его ключам ip 
+                for ip in self.dic_alarm_sound[key]:
+                    # Если значение равно 'Alarm'
+                    if self.dic_alarm_sound[key][ip] == 'Alarm':
+                        # Меняем значение с Alarm на Confirm, т.е. мы подтверждаем наличие аварий
+                        self.dic_alarm_sound[key][ip] = 'Confirm'
     
     # Метод запускает мелодию при возникновении аварии
     def _run_play_sound(self):
-        print('_run_play_sound: Run sound')
         # Проверяем если галочка "Без звука" не установлена, то воспроизводим мелодию
         if not self.checkSound.isChecked():
-            # Проверяем если мелодия не запущена
-            if not self.play_sound.is_play():
-                # Запускаем мелодию
-                self.play_sound.start()
-
-    # Метод проверяет, если медодия не была запущена для текущей аварий, возвращает True
-    def _isplay_sound_current_alarm(self, key_alarm, ip):
+            # Проверяем если установлена галочка "Повторять мелодию"
+            if self.repeat_sound.isChecked():
+                # Проверяем если мелодия не запущена
+                if not self.play_sound.is_play():
+                    # Запускаем мелодию до момента пока ее не отключат
+                    self.play_sound.start()
+            else:
+                # Проверяем если мелодия не запущена
+                if not self.play_sound.is_play():
+                    # Воспроизвести мелодию один раз
+                    self.play_sound.single_sound()
+                
+    # Метод проверяет воспроизводилась ли мелодия для аварии с ip адресом, проверяет наличие ключа ip в словаре dic_alarm_sound
+    def _isplay_sound(self, key_alarm, ip) -> bool:
         # Если в словаре нет ключа с ip адресом
         if self.dic_alarm_sound[key_alarm].get(ip) == None:
             # Добавляем в словарь ключ ip адрес и значение Alarm
@@ -521,37 +637,73 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
             return True
         else:
             False
-    # Метод проверяет выводилось ли диалоговое окно для текущей аварии, если не выводилось возвращает True
-    def _isrun_timer_massegebox(self, key_alarm, ip):
+
+    # Метод проверяет выводилось Диалоговое окно с сообщением об аварии, проверяет в словаре dic_massege_box ключ с ip-адресом 
+    def _is_display_dialog(self, key_alarm, ip) -> bool:
         # Если в словаре нет ключа с ip адресом
         if self.dic_massege_box[key_alarm].get(ip) == None:
-            # Добавляем в словарь ключ ip адрес и значение Alarm
-            self.dic_massege_box[key_alarm][ip] = 'Alarm'
+            # Добавляем ip адрес в словарь со значением Add
+            self.dic_massege_box[key_alarm][ip] = 'Add'
             return True
         else:
             False
+    
+    # Метод выводит Диалоговое окно с сообщением об аварии
+    def _display_dialog(self, host_name,  description):
+        # Создаем экземпляр класса
+        critical_alarm = QMessageBox()
+        critical_alarm.setWindowTitle('Авария')
+        critical_alarm.setText('Авария')
+        critical_alarm.setIcon(QMessageBox.Critical)
+        critical_alarm.setWindowIcon(self.icon_err)
+        # Добавляем текст сообщения который будет выводится с вызовом Диалогово окна
+        critical_alarm.setText(f'<b style="font-size:{self.font_size_message_alarm}px">{host_name}: {description}</b>')
+        critical_alarm.open()
+        critical_alarm.buttonClicked.connect(self.click_btn)
+        # Возвращаем экземпляр класса
+        return critical_alarm
+    
+    # Метод проверяет все ли аварии были потверждены пользователем
+    def _is_confirm_alarms(self) -> bool:
+        # Создаем генератор списка, обращаемся к словарю dic_alarm_sound по значениям (values) полученные 
+        # данные преобразуем в список перебираем в цикле список словарей, если словарь не пустой
+        #  добавлеям в созданный список ls проверяем если этот список пустой.
+        ls = [list(dic.values()) for dic in list(self.dic_alarm_sound.values()) if dic]
+        for num, alarms in enumerate(ls, start=1):
+            # Если в словаре есть значение  Alarm, значит есть не подтвержденная авария
+            if 'Alarm' in alarms:
+                # Возвращаем False
+                return False
+            # Если число итераций равно длине списка, значит мы дошли до конца списка, т.е. все аварии потверждены
+            elif num == len(ls):
+                return True 
 
     # Метод останавливает воспроизведение мелодии
-    def _stop_play_sound(self):
+    def _stop_play_sound(self) -> None:
         # Проверяем если мелодия запущена
         if self.play_sound.is_play():
-            # Создаем генератор списка, обращаемся к словарю dic_alarm_sound по значениям (values) полученные 
-            # данные преобразуем в список перебираем в цикле список словарей, если словарь не пустой
-            #  добавлеям в созданный список ls проверяем если этот список пустой.
-            ls = [list(dic.values()) for dic in list(self.dic_alarm_sound.values()) if dic]
-            for num, alarms in enumerate(ls, start=1):
-                print(alarms)
-                # Если в словаре есть значение  Alarm, значит есть не подтвержденная авария
-                if 'Alarm' in alarms:
-                    # Останавливаем цикл, мелодию не отключаем.
-                    break
-                # Если число итераций равно длине списка, значит мы дошли до конца списка
-                elif num == len(ls):
-                    # Останавливаем мелодию
-                    self.play_sound.stop()
-                    self.play_sound.terminate()
+            # Останавливаем мелодию
+            self.play_sound.stop()
+            self.play_sound.terminate()
+
+    # Метод вызывается при нажатии кнопки "Ок" в Диалоговом окне, меняем занчение в словаре с Alarm на Confirm,
+    # тем самым подтверждаем наличие аварии
+    def _press_button_confirm_alarm(self) -> None:
+        # Обращаетмя к словарю dic_alarm_sound получаем список ключей
+        keys = list(self.dic_alarm_sound.keys())
+        # Проходимся по списку ключей
+        for num, key in enumerate(keys):
+            # Обращаемся к словарю по ключу key, получаем словарь проверяем что если в словаре есть запись
+            if self.dic_alarm_sound[key]:
+                # Обращаемся к словарю и проходимся по его ключам ip 
+                for ip in self.dic_alarm_sound[key]:
+                    # Если значение равно 'Alarm'
+                    if self.dic_alarm_sound[key][ip] == 'Alarm':
+                        # Меняем значение с Alarm на Confirm, т.е. мы подтверждаем наличие аварий
+                        self.dic_alarm_sound[key][ip] = 'Confirm'
+                        return None 
     
-    # Метод удаляет запись об аврии из словарей date_alarm и dic_alarm_sound
+    # Метод удаляет запись об аврии из словарей date_alarm, dic_alarm_sound, dict_interim_messages и dic_massege_box
     def _remove_ip_from_dict_alarms(self, ip, *key_alarms):
         for alarm in key_alarms:
             # Если есть запись в словаре с ключом ip
@@ -562,18 +714,15 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
             if self.dic_alarm_sound[alarm].get(ip):
                 # Удаляем запись из словаря alarm_sound
                 del self.dic_alarm_sound[alarm][ip]
-
-    # Метод закрывает диалоговое окно и удаляет запись об аварии из словаря
-    def _close_massegebox(self, class_instance, ip, alarm_key):
-        # Если в словаре есть запись с этим ip
-        if self.dic_massege_box[alarm_key].get(ip):
-            # Удаляем запись из словаря
-            del self.dic_massege_box[alarm_key][ip]
-            # Проверяем, если диалоговое окно открыто
-            if class_instance.isEnabled():
-                # Закрываем диалоговое окно, т.к. аварии нет
-                class_instance.close()
-        
+            # Если есть запись в словаре с ключом ip
+            if self.dict_interim_messages[alarm].get(ip):
+                # Удаляем запись из словаря alarm_sound
+                del self.dict_interim_messages[alarm][ip] 
+            # Если в словаре есть запись с этим ip
+            if self.dic_massege_box[alarm].get(ip):
+                # Удаляем запись из словаря
+                del self.dic_massege_box[alarm][ip]   
+            
     # Метод запускает 
     def run(self):     
         #Задаем интервал запуска timer(обновления метода run)
@@ -625,19 +774,29 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                     hi_temp_water = self._parse_hi_temp_water(value)
                     # Низкий уровень топлива
                     low_oil = self._parse_low_oil(value)
+                    # Вызываем метод _parse_count, получаем количество итераций цикла
+                    counter = self._parse_count(value)
+                    # Вызываем метод, который возвращает номер окна в которое нужно вывести аврийное сообщение
+                    num_window = self._get_num_window(ip)
                     # Низкий уровень топлива
                     if low_oil >= self.low_oil_limit:
                         # Подсвечиваем строку зеленым цветом
                         word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{}</span></p>'''.format(self.path_icon_inf, row)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word)
                         # Вызываем метод который удаляет запись из словарей date_alarm и dic_alarm_sound 
                         self._remove_ip_from_dict_alarms(ip, 'low_oil')
-                        # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                        self._stop_play_sound()
-                        # Вызываем метод, проверяем если есть запись в словаре и дилоговое окно открыто, закрываем его
-                        self._close_massegebox(self.critical_alarm_low_level_oil, ip, 'low_oil')
-                    else:
+                    # Проверяем если значение равно 1 и dict_interim_messages не содержит сообщение с таким ip адресом 
+                    elif low_oil < self.low_oil_limit and ip not in self.dict_interim_messages['low_oil']:
+                        # Добавляем в словарь dict_interim_messages индекс сообщения 1 - это значит мы получили
+                        # сообщение об аврии первый раз, а так же количество итераций цикла.
+                        self.dict_interim_messages['low_oil'][ip] = [1, counter]
+                        print('ДГУ: 1-low_oil', counter)
+                    # Проверяем если значение равно 1 И индекс сообщения = 1 И разность итераций цикла равно num ИЛИ num+1
+                    elif low_oil < self.low_oil_limit and self.dict_interim_messages['low_oil'][ip][0] == 1 \
+                        and ((counter - self.dict_interim_messages['low_oil'][ip][1]) == self.num \
+                            or (counter - self.dict_interim_messages['low_oil'][ip][1]) == self.num + 1):
+                        print('ДГУ: 2 - low_oil', counter)
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
                         # Получаем дату возникновения аврии
@@ -651,33 +810,35 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         # Подсвечиваем строку бордовым цветом, цвет текста белый
                         word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
                         ">{}</span></p>'''.format(self.path_icon_critical, row)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word_alarm1)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
                         # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                         self._show_message_in_window_current_alarm(word_alarm)
+                        # Меняем индекс в словаре dict_interim_messages с 1 на 2, значит получили одну и туже аврию повторно
+                        self.dict_interim_messages['low_oil'][ip][0] = 2
                         # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                        if self._isplay_sound_current_alarm('low_oil', ip):
+                        if self._isplay_sound('low_oil', ip):
                             # Вызываем метод который запускает мелодию
                             self._run_play_sound()
-                        # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                        if self._isrun_timer_massegebox('low_oil', ip):
-                            # Создаем переменную в которую записываем значение аврии
-                            description = 'НИЗКИЙ УРОВЕНЬ ТОПЛИВА'
-                            # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                            self._show_massege_box(self.critical_alarm_low_level_oil, host_name, description)
+                        # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                        if self._is_display_dialog('low_oil', ip):
+                            # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                            if not self.Hidden_message_check_box.isChecked():
+                                description = 'Низкий уровень топлива'
+                                # Вызываем метод который выводит диалоговое окно с сообщением об аварии 
+                                critical_alarm = self._display_dialog(host_name, description)
+                                # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                self.dic_massege_box['low_oil'][ip] = critical_alarm
+                    
                     # Аварийная остановка двигателя
                     if motor == 0:
                         # Подсвечиваем строку зеленым цветом
-                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{} АВАРИЙНАЯ ОСТАНОВКА ДВИГАТЕЛЯ
+                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{} Экстренная остановка двигателя
                         </span></p>'''.format(self.path_icon_inf, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word)
                         # Вызываем метод который удаляет запись из словарей date_alarm и dic_alarm_sound 
                         self._remove_ip_from_dict_alarms(ip, 'motor')
-                        # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                        self._stop_play_sound()
-                        # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                        self._close_massegebox(self.critical_alarm_motor_work, ip, 'motor')
                     elif motor == 1:
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
@@ -686,36 +847,37 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         delta_time = self._convert_time(time.time() - self.date_alarm['motor'][ip].get('start_time'))
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} {} АВАРИЙНАЯ ОСТАНОВКА ДВИГАТЕЛЯ</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        ">{} {} Экстренная остановка двигателя</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} АВАРИЙНАЯ ОСТАНОВКА ДВИГАТЕЛЯ</span></p>'''.format(self.path_icon_critical, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word_alarm1)
+                        ">{} Экстренная остановка двигателя</span></p>'''.format(self.path_icon_critical, host_name)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
                         # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                         self._show_message_in_window_current_alarm(word_alarm)
                         # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                        if self._isplay_sound_current_alarm('motor', ip):
+                        if self._isplay_sound('motor', ip):
                             # Вызываем метод который запускает мелодию
                             self._run_play_sound()
-                        # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                        if self._isrun_timer_massegebox('motor', ip):
-                            description = 'АВАРИЙНАЯ ОСТАНОВКА ДВИГАТЕЛЯ'
-                            # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                            self._show_massege_box(self.critical_alarm_motor_work, host_name, description)
+                        # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                        if self._is_display_dialog('motor', ip):
+                            description = 'Экстренная остановка двигателя'
+                            # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                            if not self.Hidden_message_check_box.isChecked():
+                                # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                critical_alarm = self._display_dialog(host_name, description)
+                                # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                self.dic_massege_box['motor'][ip] = critical_alarm
+                    
                     # Низкий уровень О/Ж
                     if level_water == 0:
                         # Подсвечиваем строку зеленым цветом
-                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{}: НИЗКИЙ УРОВЕНЬ О/Ж
+                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{}: Низкий уровень О/Ж
                         </span></p>'''.format(self.path_icon_inf, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word)
                         # Вызываем метод который удаляет запись из словарей date_alarm и dic_alarm_sound 
                         self._remove_ip_from_dict_alarms(ip, 'level_water')
-                        # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                        self._stop_play_sound()
-                        # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                        self._close_massegebox(self.critical_alarm_level_water, ip, 'level_water')
                     elif level_water == 1:
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
@@ -724,37 +886,46 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         delta_time = self._convert_time(time.time() - self.date_alarm['level_water'][ip].get('start_time'))
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} {} НИЗКИЙ УРОВЕНЬ О/Ж</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        ">{} {} Низкий уровень О/Ж</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} НИЗКИЙ УРОВЕНЬ О/Ж</span></p>'''.format(self.path_icon_critical, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word_alarm1)
+                        ">{} Низкий уровень О/Ж</span></p>'''.format(self.path_icon_critical, host_name)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
                         # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                         self._show_message_in_window_current_alarm(word_alarm)
                         # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                        if self._isplay_sound_current_alarm('level_water', ip):
+                        if self._isplay_sound('level_water', ip):
                             # Вызываем метод который запускает мелодию
                             self._run_play_sound()
-                        # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                        if self._isrun_timer_massegebox('level_water', ip):
-                            description = 'НИЗКИЙ УРОВЕНЬ О/Ж'
-                            # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                            self._show_massege_box(self.critical_alarm_level_water, host_name, description)
+                        # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                        if self._is_display_dialog('level_water', ip):
+                            # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                            if not self.Hidden_message_check_box.isChecked():
+                                description = 'Низкий уровень О/Ж'
+                                # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                critical_alarm = self._display_dialog(host_name, description)
+                                # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                self.dic_massege_box['level_water'][ip] = critical_alarm
+                    
                     # Низкое давление масла
                     if low_pressure_oil == 0:
                         # Подсвечиваем строку зеленым цветом
-                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{}: НИЗКОЕ ДАВЛЕНИЕ МАСЛА
+                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{}: Низкое давление масла
                         </span></p>'''.format(self.path_icon_inf, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word)
                         # Вызываем метод который удаляет запись из словарей date_alarm и dic_alarm_sound 
                         self._remove_ip_from_dict_alarms(ip, 'low_pressure_oil')
-                        # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                        self._stop_play_sound()
-                        # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                        self._close_massegebox(self.critical_alarm_low_pressure_oil, ip, 'low_pressure_oil')
-                    elif low_pressure_oil == 1:
+                    # Проверяем если значение равно 1 и dict_interim_messages не содержит сообщение с таким ip адресом 
+                    elif low_pressure_oil == 1 and ip not in self.dict_interim_messages['low_pressure_oil']:
+                        # Добавляем в словарь dict_interim_messages индекс сообщения 1 - это значит мы получили
+                        # сообщение об аврии первый раз, а так же количество итераций цикла.
+                        self.dict_interim_messages['low_pressure_oil'][ip] = [1, counter]
+                    # Проверяем если значение равно 1 И индекс сообщения = 1 И разность итераций цикла равно num ИЛИ num+1
+                    elif low_pressure_oil == 1 and self.dict_interim_messages['low_pressure_oil'][ip][0] == 1 \
+                        and ((counter - self.dict_interim_messages['low_pressure_oil'][ip][1]) == self.num \
+                            or (counter - self.dict_interim_messages['low_pressure_oil'][ip][1]) == self.num + 1):
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
                         date_time = self._get_alarm_date_time(ip, key='low_pressure_oil')
@@ -762,36 +933,39 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         delta_time = self._convert_time(time.time() - self.date_alarm['low_pressure_oil'][ip].get('start_time'))
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} {} НИЗКОЕ ДАВЛЕНИЕ МАСЛА</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        ">{} {} Низкое давление масла</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} НИЗКОЕ ДАВЛЕНИЕ МАСЛА</span></p>'''.format(self.path_icon_critical, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word_alarm1)
+                        ">{} Низкое давление масла</span></p>'''.format(self.path_icon_critical, host_name)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
                         # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                         self._show_message_in_window_current_alarm(word_alarm)
+                        # Меняем индекс в словаре dict_interim_messages с 1 на 2, значит получили одну и туже аврию повторно
+                        self.dict_interim_messages['low_pressure_oil'][ip][0] = 2
                         # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                        if self._isplay_sound_current_alarm('low_pressure_oil', ip):
+                        if self._isplay_sound('low_pressure_oil', ip):
                             # Вызываем метод который запускает мелодию
                             self._run_play_sound()
-                        # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                        if self._isrun_timer_massegebox('low_pressure_oil', ip):
-                            description = 'НИЗКОЕ ДАВЛЕНИЕ МАСЛА'
-                            # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                            self._show_massege_box(self.critical_alarm_low_pressure_oil, host_name, description)
+                        # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                        if self._is_display_dialog('low_pressure_oil', ip):
+                            # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                            if not self.Hidden_message_check_box.isChecked():
+                                description = 'Низкое давление масла'
+                                # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                critical_alarm = self._display_dialog(host_name, description)
+                                # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                self.dic_massege_box['low_pressure_oil'][ip] = critical_alarm
+                    
                     # Низкая температура О/Ж
                     if low_temp_water == 0:
                         # Подсвечиваем строку зеленым цветом
-                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{}: НИЗКАЯ ТЕМПЕРАТУРА О/Ж
+                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{}: Низкая температура О/Ж
                         </span></p>'''.format(self.path_icon_inf, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word)
                         # Вызываем метод который удаляет запись об аварии из словарей date_alarm и dic_alarm_sound 
                         self._remove_ip_from_dict_alarms(ip, 'low_temp_water')
-                        # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                        self._stop_play_sound()
-                        # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                        self._close_massegebox(self.critical_alarm_low_temp_water, ip, 'low_temp_water')
                     elif low_temp_water == 1:
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
@@ -800,36 +974,37 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         delta_time = self._convert_time(time.time() - self.date_alarm['low_temp_water'][ip].get('start_time'))
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} {} НИЗАЯ ТЕМПЕРАТУРА О/Ж</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        ">{} {} Низкая температура О/Ж</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} НИЗКАЯ ТЕМПЕРАТУРА О/Ж</span></p>'''.format(self.path_icon_critical, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word_alarm1)
+                        ">{} Низкая температура О/Ж</span></p>'''.format(self.path_icon_critical, host_name)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
                         # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                         self._show_message_in_window_current_alarm(word_alarm)
                         # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                        if self._isplay_sound_current_alarm('low_temp_water', ip):
+                        if self._isplay_sound('low_temp_water', ip):
                             # Вызываем метод который запускает мелодию
                             self._run_play_sound()
-                        # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                        if self._isrun_timer_massegebox('low_temp_water', ip):
-                            description = 'НИЗКАЯ ТЕМПЕРАТУРА О/Ж'
-                            # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                            self._show_massege_box(self.critical_alarm_low_temp_water, host_name, description)
+                        # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                        if self._is_display_dialog('low_temp_water', ip):
+                            # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                            if not self.Hidden_message_check_box.isChecked():
+                                description = 'Низкая температура О/Ж'
+                                # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                critical_alarm = self._display_dialog(host_name, description)
+                                # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                self.dic_massege_box['low_temp_water'][ip] = critical_alarm
+
                     # Высокая температура О/Ж
                     if hi_temp_water == 0:
                         # Подсвечиваем строку зеленым цветом
-                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{} ВЫСОКАЯ ТЕМПЕРАТУРА О/Ж
+                        word = '''<p><img src="{}"> <span style="background-color:#00ff00;">{} Высокая температура О/Ж
                         </span></p>'''.format(self.path_icon_inf, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word)
                         # Вызываем метод который удаляет запись из словарей date_alarm и dic_alarm_sound 
                         self._remove_ip_from_dict_alarms(ip, 'hi_temp_water')
-                        # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                        self._stop_play_sound()
-                        # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                        self._close_massegebox(self.critical_alarm_hi_temp_water, ip, 'hi_temp_water')
                     elif hi_temp_water == 1:
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
@@ -838,23 +1013,27 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         delta_time = self._convert_time(time.time() - self.date_alarm['hi_temp_water'][ip].get('start_time'))
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{} {} ВЫСОКАЯ ТЕМПЕРАТУРА О/Ж</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        ">{} {} Высокая температура О/Ж</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
                         # Подсвечиваем строку бордовым цветом и цвет текста белый
                         word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
-                        ">{}: ВЫСОКАЯ ТЕМПЕРАТУРА О/Ж</span></p>'''.format(self.path_icon_critical, host_name)
-                        # Выводим значение на экран во вкладку All devices
-                        self.textBrowser_4.append(word_alarm1)
+                        ">{}: Высокая температура О/Ж</span></p>'''.format(self.path_icon_critical, host_name)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
                         # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                         self._show_message_in_window_current_alarm(word_alarm)
                         # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                        if self._isplay_sound_current_alarm('hi_temp_water', ip):
+                        if self._isplay_sound('hi_temp_water', ip):
                             # Вызываем метод который запускает мелодию
                             self._run_play_sound()
-                        # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                        if self._isrun_timer_massegebox('hi_temp_water', ip):
-                            description = 'ВЫСОКАЯ ТЕМПЕРАТУРА О/Ж'
-                            # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                            self._show_massege_box(self.critical_alarm_hi_temp_water, host_name, description)
+                        # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                        if self._is_display_dialog('hi_temp_water', ip):
+                            # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                            if not self.Hidden_message_check_box.isChecked():
+                                description = 'Высокая температура О/Ж'
+                                # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                critical_alarm = self._display_dialog(host_name, description)
+                                # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                self.dic_massege_box['hi_temp_water'][ip] = critical_alarm
                 else:   
                     # Получаем значение температуры
                     temperature = self._parse_temperature(value)
@@ -882,7 +1061,7 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         # Устанавливаем стили нашей строке с данными
                         word = '''<p><img src="{}">  <span>{}</span></p>'''.format(self.path_icon_inf, row)
                         # Если входное напряжение меньше 10 (АВАРИЯ ОТКЛЮЧЕНИЕ ЭЛЕКТРОЭНЕРГИИ)
-                        if int(voltege_in) < 10:
+                        if int(voltege_in) < 200:
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
                             # Получаем дату возникновения аврии
@@ -899,10 +1078,21 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                             # подставляем строку с параметрами аварии без даты возникновения и длительности аварии  
                             word_alarm1 = '''<p><img src="{}">  <span style="background-color: #ff4500; 
                             color: rgb(255, 255, 255);">{}</span></p>'''.format(self.path_icon_warn, row)
-                            # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                            if self._isplay_sound_current_alarm('power_alarm', ip):
+                            # Вызываем метод, который проверяет, если мелодия не воспроизводилась для текущего ip, верни True
+                            if self._isplay_sound('power_alarm', ip):
                                 # Вызываем метод который запускает мелодию
                                 self._run_play_sound()
+                            # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                            if self._is_display_dialog('power_alarm', ip):
+                                # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                                if not self.Hidden_message_check_box.isChecked():
+                                    # Описание аварии
+                                    description = 'Отключение электроэнергии'
+                                    # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                    critical_alarm = self._display_dialog(host_name, description)
+                                    # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                    self.dic_massege_box['power_alarm'][ip] = critical_alarm
+                                
                             # Если выходное напряжение меньше или равно порогу низкого напряжения (АВАРИЯ ПО НИЗКОМУ НАПРЯЖЕНИЮ)
                             if float(voltege_out) <= self.low_voltage:
                             # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
@@ -922,32 +1112,32 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                                 word_alarm1 = '''<p><img src="{}">  <span style="background-color: #B22222; 
                                 color: rgb(255, 255, 255);">{}</span></p>'''.format(self.path_icon_critical, row)
                                 # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                                if self._isplay_sound_current_alarm('low_voltage', ip):
+                                if self._isplay_sound('low_voltage', ip):
                                     # Вызываем метод который запускает мелодию
                                     self._run_play_sound()
-                                # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                                if self._isrun_timer_massegebox('low_voltage', ip):
-                                    description = 'НИЗКОЕ НАПРЯЖЕНИЕ АКБ'
-                                    # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                                    self._show_massege_box(self.critical_alarm_low_valtage, host_name, description)
+                                # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                                if self._is_display_dialog('low_voltage', ip):
+                                    # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                                    if not self.Hidden_message_check_box.isChecked():
+                                        description = 'Низкое напряжение АКБ'
+                                        # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                        critical_alarm = self._display_dialog(host_name, description)
+                                        # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                        self.dic_massege_box['low_voltage'][ip] = critical_alarm
                             # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
                             self._show_message_on_window(num_window, word_alarm1)
                             # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                             self._show_message_in_window_current_alarm(word_alarm)
                             # Вызываем метод который проверяет есть ли запись в словаре об аварии, если запись есть, то удаляем
                             self._remove_ip_from_dict_alarms(ip, 'request_err')
-
                         # ОТСУТСТВИЕ АВАРИИ ПО ЭЛЕКТРОЭНЕРГИИ И НИЗКОМУ НАПРЯЖЕНИЮ
                         # Если есть запись в словаре с ключом ip
                         elif self.date_alarm['power_alarm'].get(ip): # Метод get вернет None если нет ip
                             # Вызываем метод, который выводит сообщение в одно из окон во вкладке Общая информация
                             self._show_message_on_window(num_window, word)
                             # Вызываем метод который удаляет запись об авариях из словарей.
+                            # Удаляя из словаря запись мы удаляем ссылку на экземпляр класса QMassegeBox тем самым закрываем Диалоговое окно 
                             self._remove_ip_from_dict_alarms(ip, 'power_alarm', 'low_voltage')
-                            # Останавливаем воспроизведение мелодии
-                            self._stop_play_sound()
-                            # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                            self._close_massegebox(self.critical_alarm_low_valtage, ip, 'low_voltage')
 
                         # Поскольку высокая, низкая температуры по степени важности ниже остальных аварий,
                         # то при выполнении одного из условий выше мы условие по высокой, низкой тем-рам не проверяем 
@@ -1042,30 +1232,31 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                             word_alarm1 = '''<p><img src="{}">  <span style="background-color: #B22222; 
                             color: rgb(255, 255, 255);">{}</span></p>'''.format(self.path_icon_warn, row)
                             # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                            if self._isplay_sound_current_alarm('low_signal_power', ip):
+                            if self._isplay_sound('low_signal_power', ip):
                                 # Вызываем метод который запускает мелодию
                                 self._run_play_sound()
-                            # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                            if self._isrun_timer_massegebox('low_signal_power', ip):
-                                description = 'НИЗКИЕ ПРИЕМНЫЕ УРОВНИ ТРАНСПОНДЕРА'
-                                # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                                self._show_massege_box(self.critical_alarm_fiber_low_level, host_name, description)
+                            # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                            if self._is_display_dialog('low_signal_power', ip):
+                                # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                                if not self.Hidden_message_check_box.isChecked():
+                                    description = 'Низкие приемные уровни транспондера'
+                                    # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                    critical_alarm = self._display_dialog(host_name, description)
+                                    # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                    self.dic_massege_box['low_signal_power'][ip] = critical_alarm
                             # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
                             self._show_message_on_window(num_window, word_alarm1)
                             # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                             self._show_message_in_window_current_alarm(word_alarm)
                             # Вызываем метод который проверяет есть ли запись в словаре об аварии, если запись есть, то удаляем
                             self._remove_ip_from_dict_alarms(ip, 'request_err')
+
                         # ОТСУТСТВИЕ АВАРИИ НИЗКОГО СИГНАЛА
                         elif self.date_alarm['low_signal_power'].get(ip):
                             # Вызываем метод, который выводит сообщение в одно из окон во вкладке Общая информация
                             self._show_message_on_window(num_window, word)
                             # Вызываем метод который удаляет ip адрес из словарей аврий
                             self._remove_ip_from_dict_alarms(ip, 'low_signal_power')
-                            # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                            self._stop_play_sound()
-                            # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                            self._close_massegebox(self.critical_alarm_fiber_low_level, ip, 'low_signal_power')
 
                         # Поскольку высокая температура по степени важности ниже "Низкого уровня сигнала", 
                         # то при выполнении одного из условий выше мы условие по высокой температуре не проверяем
@@ -1095,28 +1286,29 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                             # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
                             self._show_message_on_window(num_window, word_alarm1)
                             # Вызываем метод, проверяем, если мелодия не воспроизводилась для текущей аварии, верни True
-                            if self._isplay_sound_current_alarm('hight_temp', ip):
+                            if self._isplay_sound('hight_temp', ip):
                                 # Вызываем метод который запускает мелодию
                                 self._run_play_sound()
-                            # Вызываем метод, проверяем, если диалоговое окно не выводилось для текущей аварии, верни True 
-                            if self._isrun_timer_massegebox('hight_temp', ip):
-                                description = 'ВЫСОКАЯ ТЕМПЕРАТУРА ТРАНСПОНДЕРА'
-                                # Вызываем метод, который выводит Диалоговое окно с сообщением об аварии
-                                self._show_massege_box(self.critical_alarm_temp_fiber, host_name, description)
+                            # Проверяет выводилось Диалоговое окно для этой аварии путем проверки в словаре записи с этим ip адресом
+                            if self._is_display_dialog('hight_temp', ip):
+                                # Если не установлена галочка "Не выводить Диалоговое окно с сообщением"
+                                if not self.Hidden_message_check_box.isChecked():
+                                    description = 'Высокая температура транспондера'
+                                    # Вызываем метод который выводит диалоговое окно с сообщением об аварии
+                                    critical_alarm = self._display_dialog(host_name, description)
+                                    # Добавляем в словарь ключ ip адрес и экземпляр класса
+                                    self.dic_massege_box['hight_temp'][ip] = critical_alarm
                             # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
                             self._show_message_in_window_current_alarm(word_alarm)
                             # Вызываем метод который проверяет есть ли запись в словаре об аварии, если есть, то удаляем
                             self._remove_ip_from_dict_alarms(ip, 'request_err')
+
                         # ОТСУТСТВИЕ АВАРИИ ПО ВЫСОКОЙ ТЕМПЕРАТУРЕ
                         elif self.date_alarm['hight_temp'].get(ip):
                             # Вызываем метод, который выводит сообщение в одно из окон во вкладке Общая информация
                             self._show_message_on_window(num_window, word)
                             # Вызываем метод который удаляет ip адрес из словарей аврий
                             self._remove_ip_from_dict_alarms(ip, 'hight_temp')
-                            # Вызываем метод который проверяет если мелодия запущена, он ее останавливает
-                            self._stop_play_sound()
-                            # Вызываем метод, проверяем есть ли запись в словаре и если дилоговое окно открыто, закрываем его
-                            self._close_massegebox(self.critical_alarm_temp_fiber, ip, 'hight_temp')
 
                         # Поскольку низкая температура по степени важности ниже "Низкого уровня сигнала", 
                         # то при выполнении одного из условий выше мы условие по высокой температуре не проверяем
@@ -1174,7 +1366,11 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
                         self._show_message_on_window(num_window, word_alarm1)
                         # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
-                        self._show_message_in_window_current_alarm(word_alarm) 
+                        self._show_message_in_window_current_alarm(word_alarm)
+                # Вызываем метод который проверяет, что все аварии потверждены пользователем перед тем как остановить мелодию
+                if self._is_confirm_alarms():
+                    # Вызываем метод который останавливает воспроизведение мелодии
+                    self._stop_play_sound() 
         # Создаем экземпляр класса sql
         with ConnectSqlDB() as sql:
             # Добавляем словарь date_alarm в БД в формате json
@@ -1222,8 +1418,8 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
 
 if __name__ == '__main__':
     app = SecondWindowBrowser()
-    app.show()
-    app._show_massege_box()
+    app._create_massege_box(1)
+    #app._show_massege_box()
     #s = SecondWindowBrowser()
     #s._play_sound()
 
