@@ -19,7 +19,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
         QThread.__init__(self)
     
         # Переменная определяет время между запросами цикла while
-        self.interval_time = 10
+        self.interval_time = 5
         #
         self.snmp_trap = []
         #
@@ -92,12 +92,13 @@ class ThreadSNMPAsk(QThread, ClientModbus):
     '''
     
     # Метод делает запрос по протоколу SNMP, принимает на вход ip и набор oid для определенного устройства.
-    def get_request(self, ip, oids, flag, timeout, next):
-        if flag:
+    def get_request(self, ip, oids, block, timeout, next):
+        if block:
             self.manager = Manager(b'public', version=1, port=161)
         try:
-            out = self.manager.get(ip, *oids, next=next, timeout=timeout)
-            if flag:
+            # Значение block=False, говорит что мы не дожидаемся результата, а получим его при следующем запросе
+            out = self.manager.get(ip, *oids, next=next, timeout=timeout, block=block)
+            if block:
                 self.manager.close()
             return out
         except Timeout as err:
@@ -106,7 +107,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             # Логирование, записывает в файл logs_snmp_ask.txt
             self.logger.info(f'Ошибка Timeout - не получен ответ от устройства {ip}')
            # Если flag истина, то закрываем SNMP поток. 
-            if flag:
+            if block:
                 self.manager.close()
             return error
         except NoSuchName as err:
@@ -114,7 +115,7 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
             self.logger.info(f'Ошибка NoSuchName - не существующая переменная {err}: {ip}')
             # Если flag истина, то закрываем SNMP поток. 
-            if flag:
+            if block:
                 self.manager.close()
             return error
         except AttributeError as err:
@@ -122,22 +123,23 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
             self.logger.info(f'Ошибка AttributeError - SNMP Manager не запущен, в запросе не передан flag=True: {ip}')
             # Если flag истина, то закрываем SNMP поток. 
-            if flag:
+            if block:
                 self.manager.close()
             return error
         except OSError as err:
             # Если flag истина, то закрываем SNMP поток. 
-            if flag:
+            if block:
                 self.manager.close()
             return str(err)
         
-    def macc(self, ip, timeout=10, next = True, flag = False):
+    def macc(self, ip, timeout=10, next = True, block = False):
         #
         values = []
         oids = [self.f10GFx2DDTemp, self.f10GFx2DDTxPWR, self.f10GFx2DDRxPWR, self.f10GFx3DDTemp, self.f10GFx3DDTxPWR, self.f10GFx3DDRxPWR]
         # Делаем запрос GETNEX получаем список данных типа snmp.types.VarBind
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        #
+        if type(out) is list and None not in out:
             # Перебираем список по переменной типа VarBind
             for var_bind in out:
                 # Используем метод values, получаем из VarBind данные типа snmp.types.OCTET_STRING, значение в которой в байтах
@@ -147,16 +149,22 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; TxFiber2: {values[1]} dBm; RxFiber2: {values[2]} dBm; TempFiber2: {values[0]} *C; TxFiber3: {values[4]} dBm; RxFiber3: {values[5]} dBm; TempFiber3: {values[3]} *C" 
             return result
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
-    def eltek(self, ip, timeout=10, next = True, flag = False):
+    def eltek(self, ip, timeout=10, next = True, block = False):
         #
         values = []
         oids = [self.ac_volt1, self.batt_out_volt, self.rect_total_curr, self.rect_stat_temp]
         #
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             for i in out:
                 tuple_snmp_data = i.values
                 if tuple_snmp_data[-2].value.rstrip('.0') == self.batt_out_volt:
@@ -168,16 +176,22 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[0]} V; OUT: {values[1]} V ({values[2]} А); *C: {values[3]}"  
             # Возвращаем результат
             return result
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
-    def forpost_2(self, ip, timeout=10, next = False, flag = False):
+    def forpost_2(self, ip, timeout=10, next = False, block = False):
         #
         values = []
         oids = [self.load_A, self.temp, self.load_V, self.out_V, self.in_st, self.batt, self.inp_V]
         #
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             # Делаем обработку полученных данных
             for i in out:
                 snm = i.values
@@ -189,16 +203,22 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[6]} V [status: {values[4]}]; OUT: {values[3]} V ({values[0]} А). Batt: {values[5]}%. *C: {values[1]}"  
             return result
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
         
-    def forpost(self, ip, timeout=10, next = False, flag = False):
+    def forpost(self, ip, timeout=10, next = False, block = False):
         # 
         values = []
         oids = [self.load_Amp, self.tmp, self.load_Vol, self.in_stat, self.betery, self.inp_Volt]
         # Делаем запрос, вызвав метод get_request результат записываем в переменную out
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             for i in out:
                 snm = i.values
                 # Делаем проверку если полученное значение равно load_Vol или load_Amp
@@ -212,17 +232,22 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[5]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); Batt: {values[4]}%; *C: {values[1]}" 
             return result
-        # Иначе, мы получили строку с именем ошибки 
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
-    def forpost_3(self, ip, timeout=10, next = False, flag = False):
+    def forpost_3(self, ip, timeout=10, next = False, block = False):
         #
         values = []
         oids = [self.load_Amp, self.tmp, self.load_Vol, self.in_stat, self.inp_Volt]
         #
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             for i in out:
                 snm = i.values
                 if snm[-2].value == self.load_Vol or snm[-2].value == self.load_Amp:
@@ -233,34 +258,44 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[4]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); *C: {values[1]}" 
             return result
-        # Иначе, мы получили строку с именем ошибки 
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
-    def eaton(self, ip, timeout=10, next = False, flag = False):
+    def eaton(self, ip, timeout=10, next = False, block = False):
         #
         values = []
         oids = [self.power, self.load, self.out, self.inp, self.battery, self.in_status, self.temperature]
         #
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             for i in out:
                 snm = i.values
                 values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[3]} V [status: {values[5]}]; OUT: {values[2]} V; Load: {values[1]}% ({values[0]} WT); Batt: {values[4]}%; *C: {values[6]}" 
             return result
-        # Иначе, мы получили строку с именем ошибки 
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
-    def sc200(self, ip, timeout=10, next = False, flag = False):
+    def sc200(self, ip, timeout=10, next = False, block = False):
         #
         values = []
         oids = [self.load_Am, self.out_Vol, self.inp_Vol, self.temper]
         #
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             for i in out:
                 snm = i.values
                 if snm[-2].value == self.out_Vol:
@@ -273,34 +308,44 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[2]} V; OUT: {values[1]} V Load: ({values[0]}A); *C: {values[3]}" 
             return result
-        # Иначе, мы получили строку с именем ошибки 
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
-    def legrand(self, ip, timeout=10, next = False, flag = False):
+    def legrand(self, ip, timeout=10, next = False, block = False):
         #
         values = []
         oids = [self.out, self.inp, self.tmprt, self.battery]
         #
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             for i in out:
                 snm = i.values
                 values.append(snm[-1].value)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[1]} V; OUT: {values[0]} V Batt: {values[3]}%; *C: {values[2]}" 
             return result
-        # Иначе, мы получили строку с именем ошибки 
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
-    def apc(self, ip, timeout=10, next = False, flag = False):
+    def apc(self, ip, timeout=10, next = False, block = False):
         #
         values = []
         oids = [self.output_load, self.output_voltage, self.inpu_Voltage, self.input_st, self.batt_temp, self.batt_capacity]
         # Делаем GET запрос, получаем список данных типа VarBind и записываем в перенменную out
-        out = self.get_request(ip, oids, flag, timeout, next)
-        if type(out) is list:
+        out = self.get_request(ip, oids, block, timeout, next)
+        if type(out) is list and None not in out:
             # Перебираем список с данными типа VarBind 
             for var_bind in out:
                 # Используем метод values, получаем из VarBind данные типа SNMP_INTEGER
@@ -310,87 +355,114 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[2]} V  [status: {values[3]}]; OUT: {values[1]} V; Load: {values[0]}%; Batt: {values[5]}%; *C: {values[4]}" 
             return result
-        else:
+        # Если тип ответа строка 
+        elif type(out) is str:
             return out
+        # Если количество запросов одного и тогоже устройства равно 2
+        elif self.count == 2:
+            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
+            error = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} SNMP:REQEST_ERROR"
+            return error
 
     # Метод запускает SNMP опрощик
     def run(self):
         # Счетчик записываем количество итераций сделанных циклом while
         self.counter = 1
+        # Количество SNMP запрсов 
+        self.count = 1
+        # Запускаем SNMP Менеджер
+        self.manager = Manager(b'public', version=1)
         while True:
-            with Manager(b'public', version=1) as self.manager:
-                # Создаем переменную в которую будем сохранять результаты snmp
-                self.snmp_trap = []
-                # Создаем экземпляр класса
-                with ConnectSqlDB() as sql:
-                    try:
-                        # Делаем запрос к БД, получить список значений oid и ip из таблицы Devices
-                        data_base = sql.get_values_list_db('model', 'ip', table='Devices')
-                    except (sqlite3.IntegrityError, sqlite3.OperationalError):
-                        self.logger.error("Ошибка запроса из БД: sql.get_values_list_db('model', 'ip', table='Devices')" )
-                if data_base:
-                    # Перебираем данные словаря по ключам
-                    for model, ip in data_base:
-                        # Делаем проверку если ключ словаря сопал с названием метода
-                        if model == 'forpost':
-                            # Вызываем метод forpost передавая ему ip адрес устройства
-                            result = self.forpost(ip)
+            # Создаем переменную в которую будем сохранять результаты snmp
+            self.snmp_trap = []
+            # Создаем экземпляр класса
+            with ConnectSqlDB() as sql:
+                try:
+                    # Делаем запрос к БД, получить список значений oid и ip из таблицы Devices
+                    data_base = sql.get_values_list_db('model', 'ip', table='Devices')
+                except (sqlite3.IntegrityError, sqlite3.OperationalError):
+                    self.logger.error("Ошибка запроса из БД: sql.get_values_list_db('model', 'ip', table='Devices')" )
+            if data_base:
+                # Перебираем данные словаря по ключам
+                for model, ip in data_base:
+                    # Делаем проверку если ключ словаря сопал с названием метода
+                    if model == 'forpost':
+                        # Вызываем метод forpost передавая ему ip адрес устройства
+                        result = self.forpost(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'forpost_2':
-                            # Вызываем метод forpost_2 передавая ему ip адрес устройства
-                            result = self.forpost_2(ip)
+                    elif model == 'forpost_2':
+                        # Вызываем метод forpost_2 передавая ему ip адрес устройства
+                        result = self.forpost_2(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'forpost_3':
-                            # Вызываем метод forpost_3 передавая ему ip адрес устройства
-                            result = self.forpost_3(ip)
+                    elif model == 'forpost_3':
+                        # Вызываем метод forpost_3 передавая ему ip адрес устройства
+                        result = self.forpost_3(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'eaton':
-                            # Вызываем метод eaton передавая ему ip адрес устройства
-                            result = self.eaton(ip)
+                    elif model == 'eaton':
+                        # Вызываем метод eaton передавая ему ip адрес устройства
+                        result = self.eaton(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'sc200':
-                            # Вызываем метод sc200 передавая ему ip адрес устройства
-                            result = self.sc200(ip)
+                    elif model == 'sc200':
+                        # Вызываем метод sc200 передавая ему ip адрес устройства
+                        result = self.sc200(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'legrand':
-                            # Вызываем метод legrand передавая ему ip адрес устройства
-                            result = self.legrand(ip)
+                    elif model == 'legrand':
+                        # Вызываем метод legrand передавая ему ip адрес устройства
+                        result = self.legrand(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'apc':
-                            # Вызываем метод apc передавая ему ip адрес устройства
-                            result = self.apc(ip)
+                    elif model == 'apc':
+                        # Вызываем метод apc передавая ему ip адрес устройства
+                        result = self.apc(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'eltek':
-                            # Вызываем метод eltek передавая ему ip адрес устройства
-                            result = self.eltek(ip)
+                    elif model == 'eltek':
+                        # Вызываем метод eltek передавая ему ip адрес устройства
+                        result = self.eltek(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'macc':
-                            # Вызываем метод macc передавая ему ip адрес устройства
-                            result = self.macc(ip)
+                    elif model == 'macc':
+                        # Вызываем метод macc передавая ему ip адрес устройства
+                        result = self.macc(ip)
+                        if result:
                             # Добавляем результат в список snmp_trap
                             self.snmp_trap.append(result)
-                        elif model == 'modbus':
-                            # Вызываем метод modbus передавая ему ip адрес устройства  и значение счетчика итераций
-                            result = self.modbus(ip, count = self.counter)
-                            if type(result) is tuple:
-                                # Преобразуем кортеж в список и объеденяем со списком snmp_trap
-                                self.snmp_trap += list(result)
-                            else:
-                                # Добавляем результат в список snmp_trap
-                                self.snmp_trap.append(result)
-            #
+                    elif model == 'modbus':
+                        # Вызываем метод modbus передавая ему ip адрес устройства  и значение счетчика итераций
+                        result = self.modbus(ip, count = self.counter)
+                        if type(result) is tuple:
+                            # Преобразуем кортеж в список и объеденяем со списком snmp_trap
+                            self.snmp_trap += list(result)
+                        else:
+                            # Добавляем результат в список snmp_trap
+                            self.snmp_trap.append(result)
+            # Если число итераций цикла рано двум
+            if self.count == 2:
+                # Обнуляем счетчик
+                self.count = 0
+                # Закрываем SNMP Manager
+                self.manager.close()
+                # Запускаем SNMP Manager
+                self.manager = Manager(b'public', version=1)
+                # Увеличиваем счетчик на 1
+                self.counter += 1
             self.sleep(self.interval_time)
             # Увеличиваем счетчик на 1
-            self.counter += 1
-    
+            self.count += 1
+
     # Метод останавливает работу SNMP Manager-а
     def snmp_stop(self):
         try:
@@ -401,10 +473,10 @@ class ThreadSNMPAsk(QThread, ClientModbus):
 
 if __name__ == '__main__':
     snmp = ThreadSNMPAsk()
+    snmp.run()
     #ls = []
-    #for i in range(2):
-    print(snmp.cisco('10.0.31.3', port='4', flag = True))
-        #ls.append(counters)
+    #for i in range(10):
+        #print(snmp.forpost('10.192.50.114', flag=True))
         #time.sleep(10)
     #print('Total:', ls[1] - ls[0])
     
