@@ -21,7 +21,6 @@ from class_SqlLiteMain import ConnectSqlDB
 from psutil import Process, NoSuchProcess
 import multiprocessing
 
-
 class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
 
     def __init__(self):
@@ -100,6 +99,10 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.style_3 = "background-color:  rgb(255, 255, 221);\n" "font: 75 {}pt 'Book Antiqua';"
         # Стиль по умолчанию :цвет фона - "Белый", тип шрифта "Arial"
         self.style_default = "background-color:  rgb(255, 255, 255);\n" "font: 75 {}pt 'Arial';"
+        # Переменная определяет начальный размер шрифта текста сообщения Диалогового окна
+        self.font_size_message_alarm = 64
+        # Присваиваем значение переменной класса SecondWindow значение размера шрифта текста
+        self.window.font_size_message_alarm = self.font_size_message_alarm
 
     # СТАТУС БАР
         # Создаем экземпляр класса  QLable Выводим сообщение в статус бар со статусом загрузки
@@ -174,6 +177,8 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.Set_monitor_high_temp_ddm_btn.pressed.connect(self.set_temp_hight_ddm_monitor_btn)
         self.Set_monitor_power_sign_btn.pressed.connect(self.set_signal_low_ddm_monitor_btn)
         self.Set_monitor_count_btn.pressed.connect(self.set_count_check_monitor_btn)
+        self.Set_font_size_btn.pressed.connect(self.set_font_size_message_box)
+        self.View_message_box_btn.pressed.connect(self.button_press_view_message_box)
 
     # ДОБАВЛЕНИЕ ИКОНКИ С ИЗОБРАЖЕНИЕМ ДЛЯ КНОПКИ
         # Вызываем у кнопки Add_User_btn метод setIcon, передаем в качестве аргумента экземпляр класса icon_btn_add унаследованный от класса 
@@ -291,6 +296,9 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
 
     # Выводим первоначальное значение Число проверок перед отправкой сообщения Monitor Alarm
         self.textBrowser_25.append(str(self.monitoring_alarms.num))
+
+    # Выводим значение шрифта текста Диалогового окна при запуске программы
+        self.textBrowser_27.append(str(self.font_size_message_alarm))
      
     # СОЗДАНИЕ ВКЛАДОК ДЛЯ МЕНЮ 
         # Для Меню добавляем действия(вкладки) при нажатии на которые будет вызываться метод action_clicked который, будет выполнять
@@ -331,6 +339,8 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.statusbar.addWidget(self.bot_lbl, 2)
         # Выводим Надпись AlarmMonitoring с изображением в статус Бар
         self.statusbar.addWidget(self.alarm_lbl, 1)
+
+        self.ls = [] 
 
     # Метод закрывает приложение
     def closeEvent(self, event):
@@ -593,6 +603,38 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             btn.setEnabled(True)
         elif btn.text() == 'OK':
             self.err_token_bot.clearFocus()
+    
+    # Метод устанавливает размер шрифта текста диалогового окна, которое будет выводится при появлении аварии  
+    def set_font_size_message_box(self):
+        try:
+            # Получаем значение размера шрифта которое ввел пользователь
+            self.font_size_message_alarm = self.textEdit_35.toPlainText().strip(' ')
+            # Присваиваем полученное значение переменной из класса SecondWindow
+            self.window.font_size_message_alarm = int(self.font_size_message_alarm)
+            # Очищаем поле textBrowser_27
+            self.textBrowser_27.clear()
+            # Выводим введенное значение размера шрифта текста
+            self.textBrowser_27.append(self.font_size_message_alarm)
+            # Выравниваем значение по центру
+            self.textBrowser_27.setAlignment(QtCore.Qt.AlignCenter)
+            # Очищаем поле для ввода текста
+            self.textEdit_35.clear()
+        # Если попали в исключение, то выводим диалоговое окно, о том что не корректно введены данные
+        except ValueError:
+            # Очищаем поле для ввода текста
+            self.textEdit_35.clear()
+            # Задаем сдвиг диалогового окна относительно основного окна приложения
+            self.err_value.move((self.position_main_window[0] + self.X), (self.position_main_window[1] + self.Y))
+            # Вызываем диалоговое окно с ошибкой
+            self.err_value.exec_()
+    
+    # Метод при нажатии кнопки "Просмотр" выводит Диалоговое окно с текстом сообщения во вкладки "Настройки"  
+    def button_press_view_message_box(self):
+        host_name = 'ААУС Б. Тира (КП2)'
+        description = 'Отключение электроэнергии'
+        # Добавляем текст сообщения который будет выводится с вызовом Диалогово окна
+        self.test_font_size.setText(f'<b style="font-size:{self.font_size_message_alarm}px">{host_name}: {description}</b>')
+        self.test_font_size.exec()
 
     # Метод проверяет, если пользователь начал ввод текста в поле textEdit, то активируем кнопки иначе кнопки деактивированы, а
     # так же запускает метод _get_position_window, этот метод получает координаты основного окна. 
@@ -760,6 +802,11 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             self.Delete_switch_port_btn.setEnabled(True)
         else:
             self.Delete_switch_port_btn.setEnabled(False)
+        # Кнопка установки размера шрифта текста в диалоговом окне
+        if self.textEdit_35.toPlainText():
+            self.Set_font_size_btn.setEnabled(True)
+        else:
+            self.Set_font_size_btn.setEnabled(False)
 
     # Метод добавляет пользователя в файл Users, т.е. тем самым дает доступ к чат Боту, при нажатие кнопки "Add User" 
     def button_pressed_add(self):
@@ -1214,56 +1261,56 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             # Вызываем метод forpost2 передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
             if method == 'forpost':
                 # Вызываем метод forpost из класса "class_SNMPAsc" передавая на вход ip адрес устройства, полученный результат записываем в переменную result
-                result = self.snmp_ask_check.forpost(self.ip_address, timeout=5, flag=True)
+                result = self.snmp_ask_check.forpost(self.ip_address, timeout=5, block=True)
                 # Выводим полученый результат в поле textBrowser 
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'forpost_2':
                 # Вызываем метод forpost2 передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.forpost_2(self.ip_address, timeout=5, flag=True)
+                result = self.snmp_ask_check.forpost_2(self.ip_address, timeout=5, block=True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'forpost_3':
                 # Вызываем метод forpost_3 передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.forpost_3(self.ip_address, timeout=5, flag=True)
+                result = self.snmp_ask_check.forpost_3(self.ip_address, timeout=5, block=True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'eaton':
                 # Вызываем метод eaton передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.eaton(self.ip_address, timeout=5, flag=True)
+                result = self.snmp_ask_check.eaton(self.ip_address, timeout=5, block=True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'sc200':
                 # Вызываем метод sc200 передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.sc200(self.ip_address, timeout=5, flag=True)
+                result = self.snmp_ask_check.sc200(self.ip_address, timeout=5, block=True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'legrand':
                 # Вызываем метод legrand передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.legrand(self.ip_address, timeout=5, flag=True)
+                result = self.snmp_ask_check.legrand(self.ip_address, timeout=5, block=True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'apc':
                 # Вызываем метод apc передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.apc(self.ip_address, timeout=5, flag=True)
+                result = self.snmp_ask_check.apc(self.ip_address, timeout=5, block=True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'eltek':
                 # Вызываем метод eltek передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.eltek(self.ip_address, timeout=5, flag=True, next=True)
+                result = self.snmp_ask_check.eltek(self.ip_address, timeout=5, block=True, next=True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
             elif method == 'macc':
                 # Вызываем метод eltek передавая на вход ip адрес, время ожидания и флаг(что бы запустить snmp manager)
-                result = self.snmp_ask_check.eltek(self.ip_address, timeout=5, flag=True, next = True)
+                result = self.snmp_ask_check.eltek(self.ip_address, timeout=5, block=True, next = True)
                 self.textBrowser_2.append(result)
                 # Активируем кнопку Clear
                 self.Clear_btn_2.setEnabled(True)
