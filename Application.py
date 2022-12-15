@@ -3,8 +3,8 @@ import sqlite3
 import time
 import sys
 from pathlib import Path
-#from tabulate import tabulate
 import ipaddress
+import multiprocessing
 from telegram import error
 from class_ThreadSNMPAsc import ThreadSNMPAsk
 from class_ThreadSNMPSwitch import ThreadSNMPSwitch
@@ -19,7 +19,6 @@ from class_ApplicationWidget import AplicationWidget
 from class_SecondWindowBrowser import SecondWindowBrowser
 from class_SqlLiteMain import ConnectSqlDB
 from psutil import Process, NoSuchProcess
-import multiprocessing
 
 class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
 
@@ -339,8 +338,6 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
         self.statusbar.addWidget(self.bot_lbl, 2)
         # Выводим Надпись AlarmMonitoring с изображением в статус Бар
         self.statusbar.addWidget(self.alarm_lbl, 1)
-
-        self.ls = [] 
 
     # Метод закрывает приложение
     def closeEvent(self, event):
@@ -1168,6 +1165,8 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
     def button_pressed_add_port(self):
         # Обращаемся к полю textEdit_31, получаем значение (порт коммутатора) которое ввел пользователь
         port = self.textEdit_31.toPlainText()
+        # Обращаемся к полю textEdit_36, получаем значение (номер ip sla) которое ввел пользователь
+        sla = self.textEdit_36.toPlainText()
         # Обращаемся к полю textEdit_33, получаем значение (описание) которое ввел пользователь
         description = self.textEdit_33.toPlainText()
         # Обращаемся к селектору comboBox_4, получаем значение (ip адрес) котрое выбрал пользователь
@@ -1179,9 +1178,9 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             load_low = 1
         else:
             load_low = 0
-        try:
+        #try:
             with ConnectSqlDB() as sql:
-                sql.add_db(ip=ip_addr, port=int(port), description=description, provider=provider, load = load_low, table='Ports')
+                sql.add_db(ip=ip_addr, port=int(port), sla=int(sla), description=description, provider=provider, load = load_low, table='Ports')
             # Задаем сдвиг диалогового окна относительно основного окна приложения
             self.inf_success.move((self.position_main_window[0] + self.X), (self.position_main_window[1] + self.Y))
             # Вызываем у экземпляра класса QMessageBox() метод exec_(), который вызывает всплывающее окно об успешном добавлении данных
@@ -1194,11 +1193,11 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget):
             self.comboBox_4.setCurrentIndex(0)
             # Возвращаем селектор к первоначальному значению
             self.comboBox_8.setCurrentIndex(0)
-        except (sqlite3.IntegrityError, sqlite3.OperationalError, ValueError):
+        #except (sqlite3.IntegrityError, sqlite3.OperationalError, ValueError):
             # Задаем сдвиг диалогового окна относительно основного окна приложения
-            self.err_port_correct.move((self.position_main_window[0] + self.X), (self.position_main_window[1] + self.Y))
+            #self.err_port_correct.move((self.position_main_window[0] + self.X), (self.position_main_window[1] + self.Y))
             # Вызываем у экземпляра класса QMessageBox() метод exec_(), который вызывает всплывающее окно, что значение введено некорректно
-            self.err_port_correct.exec_()
+            #self.err_port_correct.exec_()
     
     #  Метод удаляет порт коммутатора из БД при нажатии кнопки удалить
     def button_pressed_del_port(self):
