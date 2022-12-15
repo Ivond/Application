@@ -778,6 +778,7 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                     counter = self._parse_count(value)
                     # Вызываем метод, который возвращает номер окна в которое нужно вывести аврийное сообщение
                     num_window = self._get_num_window(ip)
+
                     # Низкий уровень топлива
                     if low_oil >= self.low_oil_limit:
                         # Подсвечиваем строку зеленым цветом
@@ -791,6 +792,21 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         # Добавляем в словарь dict_interim_messages индекс сообщения 1 - это значит мы получили
                         # сообщение об аврии первый раз, а так же количество итераций цикла.
                         self.dict_interim_messages['low_oil'][ip] = [1, counter]
+                        # Получаем дату возникновения аврии
+                        date_time = self._get_alarm_date_time(ip, key='low_oil')
+                        # Вычисляем продолжительность аварии вычислив разницу между текущим временем и временем возникновения аварии
+                        delta_time = self._convert_time(time.time() - self.date_alarm['low_oil'][ip].get('start_time'))
+                        # Подсвечиваем строку бордовым, цвет текста белый подставляем 
+                        # дату и время возникновения аварии, строку с параметрами авриии и длительность аварии
+                        word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{} {}</span>  <strong>{}</strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        # Подсвечиваем строку бордовым цветом, цвет текста белый
+                        word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{}</span></p>'''.format(self.path_icon_critical, row)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
+                        # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
+                        self._show_message_in_window_current_alarm(word_alarm)
                         print('ДГУ: 1-low_oil', counter)
                     # Проверяем если значение равно 1 И индекс сообщения = 1 И разность итераций цикла равно num ИЛИ num+1
                     elif low_oil < self.low_oil_limit and self.dict_interim_messages['low_oil'][ip][0] == 1 \
@@ -829,7 +845,23 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                                 critical_alarm = self._display_dialog(host_name, description)
                                 # Добавляем в словарь ключ ip адрес и экземпляр класса
                                 self.dic_massege_box['low_oil'][ip] = critical_alarm
-                    
+                    elif low_oil < self.low_oil_limit:
+                        # Получаем дату возникновения аврии
+                        date_time = self._get_alarm_date_time(ip, key='low_oil')
+                        # Вычисляем продолжительность аварии вычислив разницу между текущим временем и временем возникновения аварии
+                        delta_time = self._convert_time(time.time() - self.date_alarm['low_oil'][ip].get('start_time'))
+                        # Подсвечиваем строку бордовым, цвет текста белый подставляем 
+                        # дату и время возникновения аварии, строку с параметрами авриии и длительность аварии
+                        word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{} {}</span>  <strong>{}</strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        # Подсвечиваем строку бордовым цветом, цвет текста белый
+                        word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{}</span></p>'''.format(self.path_icon_critical, row)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
+                        # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
+                        self._show_message_in_window_current_alarm(word_alarm)
+
                     # Аварийная остановка двигателя
                     if motor == 0:
                         # Подсвечиваем строку зеленым цветом
@@ -922,6 +954,19 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         # Добавляем в словарь dict_interim_messages индекс сообщения 1 - это значит мы получили
                         # сообщение об аврии первый раз, а так же количество итераций цикла.
                         self.dict_interim_messages['low_pressure_oil'][ip] = [1, counter]
+                        date_time = self._get_alarm_date_time(ip, key='low_pressure_oil')
+                        # Вычисляем продолжительность аварии вычислив разницу между текущим временем и временем возникновения аварии
+                        delta_time = self._convert_time(time.time() - self.date_alarm['low_pressure_oil'][ip].get('start_time'))
+                        # Подсвечиваем строку бордовым цветом и цвет текста белый
+                        word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{} {} Низкое давление масла</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        # Подсвечиваем строку бордовым цветом и цвет текста белый
+                        word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{} Низкое давление масла</span></p>'''.format(self.path_icon_critical, host_name)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
+                        # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
+                        self._show_message_in_window_current_alarm(word_alarm)
                     # Проверяем если значение равно 1 И индекс сообщения = 1 И разность итераций цикла равно num ИЛИ num+1
                     elif low_pressure_oil == 1 and self.dict_interim_messages['low_pressure_oil'][ip][0] == 1 \
                         and ((counter - self.dict_interim_messages['low_pressure_oil'][ip][1]) == self.num \
@@ -956,6 +1001,21 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                                 critical_alarm = self._display_dialog(host_name, description)
                                 # Добавляем в словарь ключ ip адрес и экземпляр класса
                                 self.dic_massege_box['low_pressure_oil'][ip] = critical_alarm
+                    # Проверяем если значение равно 1 
+                    elif low_pressure_oil == 1:
+                        date_time = self._get_alarm_date_time(ip, key='low_pressure_oil')
+                        # Вычисляем продолжительность аварии вычислив разницу между текущим временем и временем возникновения аварии
+                        delta_time = self._convert_time(time.time() - self.date_alarm['low_pressure_oil'][ip].get('start_time'))
+                        # Подсвечиваем строку бордовым цветом и цвет текста белый
+                        word_alarm = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{} {} Низкое давление масла</span> <strong>{} </strong></p>'''.format(self.path_icon_warn, date_time, row, delta_time)
+                        # Подсвечиваем строку бордовым цветом и цвет текста белый
+                        word_alarm1 = '''<p><img src="{}">  <span style="background-color:#8B0000; color: rgb(255, 255, 255);
+                        ">{} Низкое давление масла</span></p>'''.format(self.path_icon_critical, host_name)
+                        # Вызываем метод, который выводит аварийное сообщение в одно из окон во вкладке Общая информация
+                        self._show_message_on_window(num_window, word_alarm1)
+                        # Вызываем метод, который выводит аварийное сообщение во вкладку Текущие аварии
+                        self._show_message_in_window_current_alarm(word_alarm)
                     
                     # Низкая температура О/Ж
                     if low_temp_water == 0:
@@ -1061,7 +1121,7 @@ class SecondWindowBrowser(QtWidgets.QMainWindow, Ui_MainWindow, QThread, Aplicat
                         # Устанавливаем стили нашей строке с данными
                         word = '''<p><img src="{}">  <span>{}</span></p>'''.format(self.path_icon_inf, row)
                         # Если входное напряжение меньше 10 (АВАРИЯ ОТКЛЮЧЕНИЕ ЭЛЕКТРОЭНЕРГИИ)
-                        if int(voltege_in) < 200:
+                        if int(voltege_in) < 180:
                         # Хотим что бы при выводе строки с данными дата и время возникновения аврии не менялась 
                         # на всем протяжении длительности аварии. Для этого добавляем в словарь date_alarm дату и время     
                             # Получаем дату возникновения аврии
