@@ -46,9 +46,9 @@ class ConnectSqlDB:
         # Проверяем если ключивой аргумент table равен Ports - имя таблицы в БД
         elif kword['table'] == 'Ports':
             # Формируем запрос: Добавить в таблицу Ports значения ip_addr, port, description, provider
-            query = "INSERT INTO Ports (ip_addr, port, description, provider, loading) VALUES (?, ?, ?, ?, ?)"
+            query = "INSERT INTO Ports (ip_addr, port, sla, description, provider, loading) VALUES (?, ?, ?, ?, ?, ? )"
             # Делаем запрос к БД на добавление данных в таблицу Ports, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['ip'], kword['port'], kword['description'], kword['provider'], kword['load']))
+            self.cursor.execute(query, (kword['ip'], kword['port'], kword['sla'], kword['description'], kword['provider'], kword['load']))
             # Подтверждаем действие
             self.conn.commit()
         # Проверяем если ключивой аргумент table равен Pid - имя таблицы в БД
@@ -291,13 +291,20 @@ class ConnectSqlDB:
                  # Делаем запрос к БД на получение данных передав запрос query
                 result = self.cursor.execute(query)
                 return result.fetchall()
-            # Если мы получили позиционные аргументы port и ip и loading
-            elif 'port' in args and 'ip_addr' in args and 'loading' in args:
+            # Если мы получили позиционные аргументы port и sla и ip и loading
+            elif 'port' in args and 'sla' in args and 'ip_addr' in args and 'loading' in args:
                 # Формируем запрос: Получить port, ip_addr, loading из таблицы Ports, подставляя в запрос позиционные args аргументы
-                query = "SELECT {}, {}, {} FROM Ports".format(args[0], args[1], args[2])
+                query = "SELECT {}, {}, {}, {} FROM Ports".format(args[0], args[1], args[2], args[3])
                  # Делаем запрос к БД на получение данных передав запрос query
                 result = self.cursor.execute(query)
                 return result.fetchall()
+            # Если мы получили позиционные аргументы port и ip и loading
+            #elif 'port' in args and 'ip_addr' in args and 'loading' in args:
+                # Формируем запрос: Получить port, ip_addr, loading из таблицы Ports, подставляя в запрос позиционные args аргументы
+                #query = "SELECT {}, {}, {} FROM Ports".format(args[0], args[1], args[2])
+                 # Делаем запрос к БД на получение данных передав запрос query
+                #result = self.cursor.execute(query)
+                #return result.fetchall()
             # Если мы получили позиционные аргументы port и ip и description
             elif ('port' in args and 'ip_addr') in args or ('port' in args and 'description') in args or \
                 ('ip_addr' in args and 'description') in args:
@@ -444,8 +451,8 @@ if __name__ == "__main__":
     #sql.add_chat_id(user_name='Кузьмин Иван', chat_id='7777777')
     #sql.del_db(table='Settings')
     #sql.get(user_name='Кузьмин Иван')
-    #print(sql.get_values_list_db('ip_addr','port', table='Ports'))
-    print(sql.get_db('num_window', ip='10.12.12.12', table='Devices'))
+    print(sql.get_values_list_db('ip_addr', 'port', 'sla', 'loading', table='Ports'))
+    #print(sql.get_db('num_window', ip='10.12.12.12', table='Devices'))
     #sql.add_traffic('traffic_in', traffic = '1232312', ip='10.0.31.3', port='4')
     #sql._add_column('provider')
     #print(sql.get_table_db())
