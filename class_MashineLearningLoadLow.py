@@ -40,7 +40,7 @@ class MashineLearningLoadLow(QThread):
 
 if __name__ == '__main__':
 
-    sample = {'inbound': [500], 
-               'outbound': [1100]}
+    sample = {'inbound': [1000], 
+               'outbound': [20000]}
     ml = MashineLearningLoadLow()
     print(ml.predict(sample))
