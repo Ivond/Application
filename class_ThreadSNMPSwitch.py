@@ -40,6 +40,7 @@ class ThreadSNMPSwitch(QThread):
         self.ifOperStatus = '1.3.6.1.2.1.2.2.1.8.' # (up(1), down(2), testing(3))
         self.ifOutOctets = '1.3.6.1.2.1.2.2.1.16.' # ifOutOctets
         self.ifInOctets = '1.3.6.1.2.1.2.2.1.10.' # ifInOctets
+        self.OperTimeoutSLA = '1.3.6.1.4.1.9.9.42.1.2.9.1.6.'
 
     ''' 
     GetRequest - запрос к агенту от менеджера, используемый для получения значения одной или нескольких переменных.
@@ -85,48 +86,94 @@ class ThreadSNMPSwitch(QThread):
                 self.manager.close()
             return str(err)
     # Метод приимает на вход ip-адрес и порт устройства, флаг load (0 или 1) возвращает строку с параметрами
-    def cisco(self, ip, port, load, timeout=10, next = True, flag = False):
+    def cisco(self, ip, port, sla, load, timeout=10, next = True, flag = False):
         # Формируем словрь списков в который будем подставлять полученные значения трафика
         sample = {'inbound': [0], 
                   'outbound': [0]}
-        # Т.к. значение index которое необходимо передать для запроса на один меньше значения порта проводим корректировку 
-        index =str(int(port)-1)
-        # Формируем список запроса из OID
-        oids = [self.ifOutOctets+index, self.ifInOctets+index, self.ifOperStatus+index]
+        if sla:
+            # Т.к. значение index которое необходимо передать для запроса на один меньше значения sla проводим корректировку 
+            index_sla = str(int(sla)-1)
+            # Т.к. значение index которое необходимо передать для запроса на один меньше значения порта проводим корректировку 
+            index =str(int(port)-1)
+            # Формируем список запроса из OID
+            oids = [self.ifOutOctets+index, self.ifInOctets+index, self.ifOperStatus+index, self.OperTimeoutSLA+index_sla]
+        else:
+            # Т.к. значение index которое необходимо передать для запроса на один меньше значения порта проводим корректировку 
+            index =str(int(port)-1)
+            # Формируем список запроса из OID
+            oids = [self.ifOutOctets+index, self.ifInOctets+index, self.ifOperStatus+index]
         # Делаем запрос GETNEX получаем список данных типа snmp.types.VarBind
         out = self.get_request(ip, oids, flag, timeout, next)
         # Проверяем, что тип переменной out список и что он не пустой
         if out and type(out) is list:
-            for var_bind in out:
+            # Если длина списка равна 4
+            if len(out) == 4:
+                # Распаковываем список с полученными данными
+                out_octet, in_octet, oper_status, ip_sla = out
+                # Если значение равно 1 ip sla down
+                if ip_sla.values[-1].value == 1:
+                    sla_status = 'Down'
+                elif ip_sla.values[-1].value == 2:
+                    sla_status = 'Up'
+            # Если длина списка равна 3
+            elif len(out) == 3:
+                sla_status = None 
+                # Распаковываем список с полученными данными
+                out_octet, in_octet, oper_status = out
+            #
+            if oper_status.values[-1].value == 1:
+                status = 'Up'
+            elif oper_status.values[-1].value == 2:
+                status = 'Down'
+            # Получаем значение входящего трафика
+            in_octets = in_octet.values[-1].value
+            # Вызываем метод in_traffic_count, метод принимает на вход ip-адрес, номер порта и количество InOctets
+            # возвращает текущее количество входящего трафика на порту
+            in_bit_sec = abs(self.in_traffic_count(ip, port, in_octets))
+            # Добавляем полученное значение трафика в словарь
+            sample['inbound']=[in_bit_sec]
+            #
+            pretty_in_bit_sec = self.pretty_counters(in_bit_sec)
+            # Получаем значение исходящего трафика
+            out_octets = out_octet.values[-1].value
+            # Вызываем метод out_traffic_count, метод принимает на вход ip-адрес, номер порта и количество OutOctets 
+            # метод возвращает текущее количество исходящего трафика на порту
+            out_bit_sec = abs(self.out_traffic_count(ip, port, out_octets))
+            # Добавляем значеие в словарь списков
+            sample['outbound']=[out_bit_sec]
+            #
+            pretty_out_bit_sec = self.pretty_counters(out_bit_sec)
+            
+            #for var_bind in out:
                 # Используем метод values, получаем из VarBind данные типа snmp.types.OCTET_STRING, значение в байтах
-                snmp_octet_string = var_bind.values
+                #snmp_octet_string = var_bind.values
                 # Если получили значение рано 1, значит статус порта UP
-                if snmp_octet_string[-1].value == 1:
-                    status = 'Up'
+                #if snmp_octet_string[-1].value == 1:
+                    #status = 'Up'
                 # Если получили значение 2, значит статус порта DWN
-                elif snmp_octet_string[-1].value == 2:
-                    status = 'Down'
+                #elif snmp_octet_string[-1].value == 2:
+                    #status = 'Down'
                 # 
-                elif self.ifInOctets+str(port) == snmp_octet_string[0]:
+                #elif self.ifInOctets+str(port) == snmp_octet_string[0]:
                     # Преобразуем полученное байтовое значение snmp_octet_string в строковое
-                    in_octets = snmp_octet_string[-1].value
+                    #in_octets = snmp_octet_string[-1].value
                     # Вызываем метод in_traffic_count, метод принимает на вход ip-адрес, номер порта и количество InOctets
                     # возвращает текущее количество входящего трафика на порту
-                    in_bit_sec = abs(self.in_traffic_count(ip, port, in_octets))
-                    sample['inbound']=[in_bit_sec]
+                    #in_bit_sec = abs(self.in_traffic_count(ip, port, in_octets))
+                    #sample['inbound']=[in_bit_sec]
                     #
-                    pretty_in_bit_sec = self.pretty_counters(in_bit_sec)
+                    #pretty_in_bit_sec = self.pretty_counters(in_bit_sec)
                 #
-                elif self.ifOutOctets+str(port) == snmp_octet_string[0]:
+                #elif self.ifOutOctets+str(port) == snmp_octet_string[0]:
                     # Преобразуем полученное байтовое значение snmp_octet_string в строковое
-                    out_octets = snmp_octet_string[-1].value
+                    #out_octets = snmp_octet_string[-1].value
                     # Вызываем метод out_traffic_count, метод принимает на вход ip-адрес, номер порта и количество OutOctets 
                     # метод возвращает текущее количество исходящего трафика на порту
-                    out_bit_sec = abs(self.out_traffic_count(ip, port, out_octets))
+                    #out_bit_sec = abs(self.out_traffic_count(ip, port, out_octets))
                     # Добавляем значеие в словарь списков
-                    sample['outbound']=[out_bit_sec]
+                    #sample['outbound']=[out_bit_sec]
                     #
-                    pretty_out_bit_sec = self.pretty_counters(out_bit_sec)
+                    #pretty_out_bit_sec = self.pretty_counters(out_bit_sec)
             # Если Истино
             if load:
                 # Просим нашу модель предсказать статус канала принимает на вход словарь списков
@@ -135,7 +182,7 @@ class ThreadSNMPSwitch(QThread):
                 # Просим нашу модель предсказать статус канала принимает на вход словарь списков
                 channel_status = self.ml.predict(sample)
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Port: {port}; Count {self.counter}; ChannelStatus: {channel_status}; OperStatus: {status}; InOctets: {pretty_in_bit_sec}; OutOctets: {pretty_out_bit_sec}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Port: {port}; Sla: {sla_status}; Count {self.counter}; ChannelStatus: {channel_status}; OperStatus: {status}; InOctets: {pretty_in_bit_sec}; OutOctets: {pretty_out_bit_sec}" 
             return result
         else:
             return out
@@ -202,12 +249,12 @@ class ThreadSNMPSwitch(QThread):
                     # Создаем экземпляр класса
                     with ConnectSqlDB() as sql:
                         # Делаем запрос к БД, получить список значений ip_addr и port из таблицы Ports
-                        data_base = sql.get_values_list_db('ip_addr', 'port', 'loading', table='Ports')
+                        data_base = sql.get_values_list_db('ip_addr', 'port', 'sla', 'loading', table='Ports')
                     if data_base:
                         # Перебираем данные словаря по ключам
-                        for ip, port, load in data_base:
+                        for ip, port, sla, load in data_base:
                             # Вызываем метод forpost передавая ему ip адрес устройства
-                            result = self.cisco(ip, port, load)
+                            result = self.cisco(ip, port, sla, load)
                             # Добавляем результат в список snmp_switch_trap
                             self.snmp_switch_trap.append(result)
                 #
