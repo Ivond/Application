@@ -36,20 +36,22 @@ class ThreadSNMPAsk(QThread, ClientModbus):
 
         '''
         # Создание переменных OID
+        # Forpost_2 ШПТ-ИНК-2 для двух групп АКБ
         self.load_A = '1.3.6.1.4.1.33183.14.3.2.0'
-        self.temp = '1.3.6.1.4.1.33183.14.5.1.4.1'
+        self.temp = '1.3.6.1.4.1.33183.14.5.1.4.2'
         self.load_V = '1.3.6.1.4.1.33183.14.3.1.0'
         self.out_V = '1.3.6.1.4.1.33183.14.5.1.2.1'
         self.in_st = '1.3.6.1.4.1.33183.14.2.3.0'
         self.batt = '1.3.6.1.4.1.33183.14.5.1.6.1'
         self.inp_V = '1.3.6.1.4.1.33183.14.2.1.0'
+        # Forpost
         self.load_Amp ='1.3.6.1.4.1.33183.10.3.2.0'
         self.tmp = '1.3.6.1.4.1.33183.10.4.1.4.1'
         self.load_Vol = '1.3.6.1.4.1.33183.10.3.1.0'
         self.in_stat = '1.3.6.1.4.1.33183.10.2.3.0'
         self.betery = '1.3.6.1.4.1.33183.10.5.1.6.1'
         self.inp_Volt = '1.3.6.1.4.1.33183.10.2.1.0'
-        # EATON
+        # EATON + Legrand
         self.power = '1.3.6.1.2.1.33.1.4.4.1.4.1'
         self.load = '1.3.6.1.2.1.33.1.4.4.1.5.1'
         self.out = '1.3.6.1.2.1.33.1.4.4.1.2.1'
@@ -57,11 +59,12 @@ class ThreadSNMPAsk(QThread, ClientModbus):
         self.battery = '1.3.6.1.2.1.33.1.2.4.0'
         self.in_status = '1.3.6.1.2.1.33.1.4.1.0'
         self.temperature = '1.3.6.1.4.1.534.1.6.1.0'
-
+        # SC200
         self.load_Am = '1.3.6.1.4.1.1918.2.13.10.50.10.0'
         self.out_Vol = '1.3.6.1.4.1.1918.2.13.10.70.10.20.0'
         self.inp_Vol = '1.3.6.1.4.1.1918.2.13.10.40.10.0'
         self.temper = '1.3.6.1.4.1.1918.2.13.10.100.30.0'
+        # Legrand
         self.tmprt = '1.3.6.1.2.1.33.1.2.7.0'
         # APC 
         self.output_load = '1.3.6.1.4.1.318.1.1.1.4.2.3.0'
@@ -159,21 +162,16 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
 
     def eltek(self, ip, timeout=10, next = True, block = False):
-        #
-        values = []
+        # Формируем список oid для запроса
         oids = [self.ac_volt1, self.batt_out_volt, self.rect_total_curr, self.rect_stat_temp]
-        #
+        # Делаем запрос, вызвав метод get_request результат записываем в переменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            for i in out:
-                tuple_snmp_data = i.values
-                if tuple_snmp_data[-2].value.rstrip('.0') == self.batt_out_volt:
-                    item = tuple_snmp_data[-1].value / 100
-                    values.append(item)
-                else:
-                    values.append(tuple_snmp_data[-1].value)
+            # Распоковываем полученный список
+            inp_volt, out_volt, load, temp = out
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[0]} V; OUT: {values[1]} V ({values[2]} А); *C: {values[3]}"  
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {(out_volt.values[-1].value)/100} V ({load.values[-1].value} А); *C: {temp.values[-1].value}"  
             # Возвращаем результат
             return result
         # Если тип ответа строка 
@@ -186,22 +184,15 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
 
     def forpost_2(self, ip, timeout=10, next = False, block = False):
-        #
-        values = []
-        oids = [self.load_A, self.temp, self.load_V, self.out_V, self.in_st, self.batt, self.inp_V]
-        #
+        # Формируем список oid для запроса
+        oids = [self.load_A, self.temp, self.load_V, self.out_V, self.batt, self.inp_V]
+        # Делаем запрос, вызвав метод get_request результат записываем в переменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            # Делаем обработку полученных данных
-            for i in out:
-                snm = i.values
-                if snm[-2].value == self.out_V or snm[-2].value == self.load_A:
-                    item = snm[-1].value / 10
-                    values.append(item)
-                else:
-                    values.append(snm[-1].value)
-            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[6]} V [status: {values[4]}]; OUT: {values[3]} V ({values[0]} А). Batt: {values[5]}%. *C: {values[1]}"  
+            # Распоковываем полученный список 
+            load, temp, _, out_volt, batt, inp_volt = out 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {(out_volt.values[-1].value)/10} V ({(load.values[-1].value)/10} А). Batt: {batt.values[-1].value}%. *C: {temp.values[-1].value}"  
             return result
         # Если тип ответа строка 
         elif type(out) is str:
@@ -213,24 +204,15 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
         
     def forpost(self, ip, timeout=10, next = False, block = False):
-        # 
-        values = []
-        oids = [self.load_Amp, self.tmp, self.load_Vol, self.in_stat, self.betery, self.inp_Volt]
+        # Формируем список oid для запроса
+        oids = [self.load_Amp, self.tmp, self.load_Vol, self.betery, self.inp_Volt]
         # Делаем запрос, вызвав метод get_request результат записываем в переменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            for i in out:
-                snm = i.values
-                # Делаем проверку если полученное значение равно load_Vol или load_Amp
-                if snm[-2].value == self.load_Vol or snm[-2].value == self.load_Amp:
-                    # Полученное значение делим на 10, что бы получить корректные значения Напряжения и Тока нагрузки
-                    item = snm[-1].value / 10
-                    # Полученные значения добавляем в список values
-                    values.append(item)
-                else:
-                    values.append(snm[-1].value)
-            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[5]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); Batt: {values[4]}%; *C: {values[1]}" 
+            # Распаковываем список с полученными данными
+            load, temp, out_volt, batt, inp_volt = out 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {(out_volt.values[-1].value)/10} V ({(load.values[-1].value)/10} А); Batt: {batt.values[-1].value}%; *C: {temp.values[-1].value}" 
             return result
         # Если тип ответа строка 
         elif type(out) is str:
@@ -242,21 +224,16 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
 
     def forpost_3(self, ip, timeout=10, next = False, block = False):
-        #
-        values = []
-        oids = [self.load_Amp, self.tmp, self.load_Vol, self.in_stat, self.inp_Volt]
-        #
+        # Формируем список oid для запроса
+        oids = [self.load_Amp, self.tmp, self.load_Vol, self.inp_Volt]
+        # Делаем запрос, вызвав метод get_request результат записываем в переменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            for i in out:
-                snm = i.values
-                if snm[-2].value == self.load_Vol or snm[-2].value == self.load_Amp:
-                    item = snm[-1].value / 10
-                    values.append(item)
-                else:
-                    values.append(snm[-1].value)
+            # Распаковываем список с полученными данными
+            load, temp, out_volt, inp_volt = out 
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[4]} V [status: {values[3]}]; OUT: {values[2]} V ({values[0]} А); *C: {values[1]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {(out_volt.values[-1].value)/10} V ({(load.values[-1].value)/10} А); *C: {temp.values[-1].value}" 
             return result
         # Если тип ответа строка 
         elif type(out) is str:
@@ -268,17 +245,15 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
 
     def eaton(self, ip, timeout=10, next = False, block = False):
-        #
-        values = []
-        oids = [self.power, self.load, self.out, self.inp, self.battery, self.in_status, self.temperature]
-        #
+        # Формируем список oid для запроса
+        oids = [self.power, self.load, self.out, self.inp, self.battery, self.temperature]
+        # Делаем запрос, вызвав метод get_request результат записываем в переменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            for i in out:
-                snm = i.values
-                values.append(snm[-1].value)
-            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[3]} V [status: {values[5]}]; OUT: {values[2]} V; Load: {values[1]}% ({values[0]} WT); Batt: {values[4]}%; *C: {values[6]}" 
+            # Распоковываем полученный список
+            power, load, out_volt, inp_volt, batt, temp = out
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {out_volt.values[-1].value} V; Load: {load.values[-1].value}% ({power.values[-1].value} WT); Batt: {batt.values[-1].value}%; *C: {temp.values[-1].value}" 
             return result
         # Если тип ответа строка 
         elif type(out) is str:
@@ -290,23 +265,16 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
 
     def sc200(self, ip, timeout=10, next = False, block = False):
-        #
-        values = []
+        # Формируем список oid для запроса
         oids = [self.load_Am, self.out_Vol, self.inp_Vol, self.temper]
-        #
+        # Делаем запрос, вызвав метод get_request результат записываем в переменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            for i in out:
-                snm = i.values
-                if snm[-2].value == self.out_Vol:
-                    # Полученное значение делим на 100, что бы получить корректные значения Выходного напряжения
-                    item = snm[-1].value / 100
-                    # Полученные значения добавляем в список values
-                    values.append(item)
-                else:
-                    values.append(snm[-1].value)
+            # Распоковываем полученный список
+            load, out_volt, inp_volt, temp = out
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[2]} V; OUT: {values[1]} V Load: ({values[0]}A); *C: {values[3]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {(out_volt.values[-1].value)/100} V Load: ({load.values[-1].value}A); *C: {temp.values[-1].value}" 
             return result
         # Если тип ответа строка 
         elif type(out) is str:
@@ -318,17 +286,16 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
 
     def legrand(self, ip, timeout=10, next = False, block = False):
-        #
-        values = []
+        # Формируем список oid для запроса
         oids = [self.out, self.inp, self.tmprt, self.battery]
-        #
+        # Делаем запрос, вызвав метод get_request результат записываем в переменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            for i in out:
-                snm = i.values
-                values.append(snm[-1].value)
+            # Распоковываем полученный список 
+            out_volt, inp_volt, temp, batt = out
             # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[1]} V; OUT: {values[0]} V Batt: {values[3]}%; *C: {values[2]}" 
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {out_volt.values[-1].value} V Batt: {batt.values[-1].value}%; *C: {temp.values[-1].value}" 
             return result
         # Если тип ответа строка 
         elif type(out) is str:
@@ -340,20 +307,16 @@ class ThreadSNMPAsk(QThread, ClientModbus):
             return error
 
     def apc(self, ip, timeout=10, next = False, block = False):
-        #
-        values = []
-        oids = [self.output_load, self.output_voltage, self.inpu_Voltage, self.input_st, self.batt_temp, self.batt_capacity]
+        # Формируем список oid для запроса
+        oids = [self.output_load, self.output_voltage, self.inpu_Voltage, self.batt_temp, self.batt_capacity]
         # Делаем GET запрос, получаем список данных типа VarBind и записываем в перенменную out
         out = self.get_request(ip, oids, block, timeout, next)
+        # Если полученный результат список И полученный список не содержит None
         if type(out) is list and None not in out:
-            # Перебираем список с данными типа VarBind 
-            for var_bind in out:
-                # Используем метод values, получаем из VarBind данные типа SNMP_INTEGER
-                snm_integer = var_bind.values
-                # Используем метод value получаем из SNMP_INTEGER числовое значение и добавляем в список values
-                values.append(snm_integer[-1].value)
-            # Подставляем дату(перепреобразовав в нужный формат) и ip адрес
-            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {values[2]} V  [status: {values[3]}]; OUT: {values[1]} V; Load: {values[0]}%; Batt: {values[5]}%; *C: {values[4]}" 
+            # Распоковываем полученный список 
+            load, out_volt, inp_volt, temp, batt = out
+            # Формируем строку результата
+            result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {self.counter}; IN: {inp_volt.values[-1].value} V; OUT: {out_volt.values[-1].value} V; Load: {load.values[-1].value}%; Batt: {batt.values[-1].value}%; *C: {temp.values[-1].value}" 
             return result
         # Если тип ответа строка 
         elif type(out) is str:
