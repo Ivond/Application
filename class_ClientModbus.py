@@ -1,5 +1,6 @@
 #
 import socket
+from socket import AF_INET, SOCK_DGRAM
 import struct
 import re 
 import time
@@ -49,6 +50,31 @@ class ClientModbus():
             #hi_bite = int(item[:4], 16)
             #low_bite = int(('0x' + item[-2:]), 16)
             #return hi_bite, low_bite
+
+    def orion(self, ip):
+        self.udp_port = 40051
+        self.buffer_size = 1024
+        # Индентификатор устройства
+        #self.unit_id = 3
+        # Код функции Modbus
+        #self.function_code = 4
+        req1 = struct.pack('>BBBBBBBB', 0x83, 0x08, 0x00, 0xED, 0xB8, 0xBA, 0xBA, 0x62)
+        # Создаем соккет для подключения к устройству
+        self.client = socket.socket(AF_INET, SOCK_DGRAM)
+        print(self.client)
+        # Устанавливаем время ожидания при подключении
+        #self.client.settimeout(time_out)
+        # Создаем подключение к устройству
+        #self.client.connect((ip, self.udp_port))
+        #self.client.bind((ip, self.udp_port))
+        # Отправляем запрос на устройство
+        send = self.client.sendto(req1, (ip, self.udp_port))
+        print('send', send)
+        #self.client.sendto(req1)
+        # Зпрашиваем ответ 
+        #responce = self.client.recv(self.buffer_size)
+        responce = self.client.recvfrom(self.buffer_size)
+        print('ОТвет', responce)
 
     '''
     Modbus для считывания данных используем код функции 04 (чтение дискретные входы).
@@ -108,9 +134,6 @@ class ClientModbus():
             # Запрашиваем ответ
             self._recieve_responce()
             # Формируем строку с результатом
-            #result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {count}; ОПС:[{self.ao_ops}][{self.do_ops}]; Топл.:{self.fuel}%; Bat:{self.bat_V}V; АО:{self.ao_tmp}*C; ДО:{self.do_tmp}*C; О/Ж:{self.af_tmp}*C; Двиг.:{self.stop_motor}"
-            # Формируем строку с результатом
-            #result_dgu = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {count}; ДГУ: Двиг.:[{self.stop_motor}]; Выс.Темп_О/Ж:[{self.hight_temp_water}]; Низ.Темп_О/Ж:[{self.low_temp_water}]; Топл.:[{self.low_level_oil}]; ДМ:[{self.low_oil_pressure}]; Уров.О/Ж:[{self.low_level_water}]; ПУД:[{self.switch_state_motor}]; Бат.:[{self.low_batt_charge}]" 
             result = f"{time.strftime('%d-%m-%Y %H:%M:%S', time.localtime())} {ip} Count: {count}; ДГУ: ОПС:[{self.ao_ops}][{self.do_ops}]; Топл.:{self.fuel}%; Bat:{self.bat_V}V; АО:{self.ao_tmp}*C; ДО:{self.do_tmp}*C; О/Ж:{self.af_tmp}*C; Двиг.:[{self.stop_motor}]; Выс.Темп_О/Ж:[{self.hight_temp_water}]; Низ.Темп_О/Ж:[{self.low_temp_water}]; Топл.:[{self.low_level_oil}]; ДМ:[{self.low_oil_pressure}]; Уров.О/Ж:[{self.low_level_water}]; ПУД:[{self.switch_state_motor}]; Бат.:[{self.low_batt_charge}]" 
             return result
         except socket.timeout:
@@ -157,6 +180,7 @@ class ClientModbus():
                 else:
                     self.ao_ops = None
                     self.do_ops = None
+
             # 
             elif responce[3] == '5':
                 # Парсим полученный ответ и достаем последних четыре значенния это два байта в 16-тиричной форме 
@@ -167,11 +191,9 @@ class ClientModbus():
                     value_bit = bin(int(match.group('registr_value'), 16)).lstrip('0b')
                     # Если получили значение не равное нулю, т.е. Истино и длина битовой последовательности равно 1
                     if value_bit and len(value_bit) == 1:
-                        #print('value_bit_motor', value_bit)
                         # Экстренная остановка двигателя - бит0
                         self.stop_motor = value_bit
                     else:
-                        #print('value_bit_motor_else', value_bit)
                         self.stop_motor = 0
 
             # Если длинна полученных данных равна 22
@@ -188,8 +210,6 @@ class ClientModbus():
                         # Вызываем метод 
                         self._get_signals_controller(self.value_bit)
                     else:
-                        #print('value_bit_else', self.value_bit)
-                        #self.stop_motor = 0 
                         self.hight_temp_water = 0
                         self.low_temp_water = 0
                         self.low_oil_pressure = 0
@@ -206,44 +226,32 @@ class ClientModbus():
         registr_bit_full = hight_bit + value_bit # Пример: '00000' + '100000' = '00000100000' и тому подобное
         #
         for num, bit in enumerate(registr_bit_full, start=1):
-                #print(num, bit)
-            # Аварийная остановка двигателя, бит=0
-            #if len(registr_bit_full)-num == 0:
-                #self.stop_motor = bit
-                #print('self.stop_motor', bit)
             # Высокая температура охлаждающей жидкости, бит=2
             if len(registr_bit_full)-num == 2:
                 self.hight_temp_water = bit
-                #print('self.hight_temp_water', bit)
             # Низкая температура охлаждающей жидкости, бит=3
             elif len(registr_bit_full)-num == 3:
                 self.low_temp_water = bit  
-                #print('self.low_temp_water', bit)
             # Низкое давление масла, бит=4
             elif len(registr_bit_full)-num == 4:
                 self.low_oil_pressure = bit
-                #print('self.low_oil_pressure', bit)
             # Низкий уровень охлаждающей жидкости, бит=6
             elif len(registr_bit_full)-num == 6:
                 self.low_level_water = bit
-                #print('self.low_level_water', bit)
             # Низкий уровень топлива, бит=7
             elif len(registr_bit_full)-num == 7:
                 self.low_level_oil = bit
-                #print('self.low_level_oil', bit)
             # Переключатель управления двигателем не в автоматическом состоянии, бит=8
             elif len(registr_bit_full)-num == 8:
                 self.switch_state_motor = bit
-                #print('self.switch_not_auto_state', bit)
             # Низкий уровень заряда батареи, бит=10
             elif len(registr_bit_full)-num == 10:
                 self.low_batt_charge = bit
-                #print('self.low_batt_charge', bit)
     
 
 if __name__ == '__main__':
     client = ClientModbus()
-    print(client.modbus('10.184.50.200'))
+    print(client.orion('10.31.58.51'))
     #time.sleep(30)
     #print(client.modbus_alm_stop_motor('10.184.50.200'))
         
