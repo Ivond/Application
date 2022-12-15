@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'PlaneBot7.ui'
+# Form implementation generated from reading ui file 'PlaneBot8.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -889,10 +889,10 @@ class Ui_MainWindow(object):
         self.window_4_radioButton.setObjectName("window_4_radioButton")
         self.toolBox_2.addItem(self.page, "")
         self.page_3 = QtWidgets.QWidget()
-        self.page_3.setGeometry(QtCore.QRect(0, 0, 98, 28))
+        self.page_3.setGeometry(QtCore.QRect(0, 0, 380, 181))
         self.page_3.setObjectName("page_3")
         self.textEdit_31 = QtWidgets.QTextEdit(self.page_3)
-        self.textEdit_31.setGeometry(QtCore.QRect(5, 2, 141, 29))
+        self.textEdit_31.setGeometry(QtCore.QRect(5, 2, 121, 29))
         self.textEdit_31.setMaximumSize(QtCore.QSize(16777215, 29))
         font = QtGui.QFont()
         font.setPointSize(8)
@@ -966,8 +966,16 @@ class Ui_MainWindow(object):
         self.label_14.setGeometry(QtCore.QRect(5, 113, 151, 21))
         self.label_14.setObjectName("label_14")
         self.checkBox = QtWidgets.QCheckBox(self.page_3)
-        self.checkBox.setGeometry(QtCore.QRect(180, 5, 191, 21))
+        self.checkBox.setGeometry(QtCore.QRect(250, 5, 121, 21))
         self.checkBox.setObjectName("checkBox")
+        self.textEdit_36 = QtWidgets.QTextEdit(self.page_3)
+        self.textEdit_36.setGeometry(QtCore.QRect(140, 2, 91, 29))
+        font = QtGui.QFont()
+        font.setPointSize(8)
+        font.setBold(False)
+        font.setWeight(50)
+        self.textEdit_36.setFont(font)
+        self.textEdit_36.setObjectName("textEdit_36")
         self.toolBox_2.addItem(self.page_3, "")
         self.verticalLayoutWidget = QtWidgets.QWidget(self.tab_3)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(9, 250, 381, 231))
@@ -1237,12 +1245,12 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
-        self.toolBox_2.setCurrentIndex(0)
+        self.toolBox_2.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Application ver. 6.3"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Application"))
         self.label_9.setText(_translate("MainWindow", "Запуск SNMP"))
         self.Run_snmp_btn.setText(_translate("MainWindow", "Запустить"))
         self.Stop_snmp_btn.setText(_translate("MainWindow", "Остановить"))
@@ -1463,7 +1471,7 @@ class Ui_MainWindow(object):
         self.window_4_radioButton.setText(_translate("MainWindow", "Окно №4"))
         self.toolBox_2.setItemText(self.toolBox_2.indexOf(self.page), _translate("MainWindow", "Добавить | Удалить устройство"))
         self.textEdit_31.setPlaceholderText(_translate("MainWindow", "Введите номер порта "))
-        self.textEdit_33.setPlaceholderText(_translate("MainWindow", "Введите описание порта"))
+        self.textEdit_33.setPlaceholderText(_translate("MainWindow", "Введите описание"))
         self.comboBox_4.setItemText(0, _translate("MainWindow", "255.255.255.255"))
         self.Add_switch_port_btn.setText(_translate("MainWindow", "Добавить"))
         self.Delete_switch_port_btn.setText(_translate("MainWindow", "Удалить"))
@@ -1476,7 +1484,13 @@ class Ui_MainWindow(object):
         self.comboBox_8.setItemText(6, _translate("MainWindow", "ИНК"))
         self.label_6.setText(_translate("MainWindow", "Выберите провайдера"))
         self.label_14.setText(_translate("MainWindow", "Выберите устройство"))
-        self.checkBox.setText(_translate("MainWindow", "Низко нагруженный порт"))
+        self.checkBox.setText(_translate("MainWindow", "Низкий трафик"))
+        self.textEdit_36.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:8pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:10pt; font-weight:600;\"><br /></p></body></html>"))
+        self.textEdit_36.setPlaceholderText(_translate("MainWindow", "Введите IP SLA"))
         self.toolBox_2.setItemText(self.toolBox_2.indexOf(self.page_3), _translate("MainWindow", "Добавить | Удалить порт коммутатора"))
         self.label_8.setText(_translate("MainWindow", "Поиск устройств"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Устройства"))
