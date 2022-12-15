@@ -392,14 +392,14 @@ class ThreadMonitorAlarms(QThread):
         else:
             self.logger_err.error(f'ThreadMonitorAlarm: "_parse_status_port "ошибка получения значения статуса порта OperStatus из: {line}')
     
-    # Метод возвращает значение количества трафика на порту коммутатора, принимает на вход строку с параметрами полученную при SNMP запросе
-    def _parse_octets_on_port(self, line):
-        match = re.match(r'.+OutOctets: \d* (?P<bs>\S+)', line)
+    # Метод возвращает статус ip sla (Up или Down), принимает на вход строку с параметрами полученную при SNMP запросе
+    def _parse_sla_status(self, line):
+        match = re.match(r'.+Sla: (?P<sla>\S+);', line)
         if match:
-            bs = match.group('bs').strip()
-            return bs
+            sla = match.group('sla').strip()
+            return sla
         else:
-            self.logger_err.error(f'ThreadMonitorAlarm: "_parse_octets_on_port" ошибка получения значения количества трафика OutOctets из: {line}')
+            self.logger_err.error(f'ThreadMonitorAlarm: "_parse_nubmber_ipsla" ошибка получения значения количества трафика OutOctets из: {line}')
     
     # Метод возвращает значение количества трафика на порту коммутатора, принимает на вход строку с параметрами полученную при SNMP запросе
     def _parse_status_channel(self, line):
@@ -506,8 +506,10 @@ class ThreadMonitorAlarms(QThread):
                                 # Вызываем метод parse_message получаем дату и значение парамеров с оборудования
                                 date, description = self._parse_message(line)
                                 if int(rx_fiber2) < self.signal_level_fiber:
+                                    # Перезаписываем значение переменной description заменив параметр
+                                    description = description.replace('RxFiber2: {} dBm'.format(rx_fiber2), '<b>RxFiber2: {} dBm</b>'.format(rx_fiber2))
                                     # Формируем сообщение которое отпавим пользователю
-                                    message = f"{date} {self.name}: <b>Низкий уровень сигнала транспондера MAC&C</b> {description.replace('RxFiber2: {} dBm'.format(rx_fiber2), '<b>RxFiber2: {} dBm</b>'.format(rx_fiber2))}"
+                                    message = f"{date} {self.name}: <b>Низкий уровень сигнала транспондера MAC&C</b> {description}"
                                 if int(rx_fiber3) < self.signal_level_fiber:
                                     # Формируем сообщение которое отпавим пользователю
                                     message = f"{date} {self.name}: <b>Низкий уровень сигнала транспондера MAC&C</b> {description.replace('RxFiber3: {} dBm'.format(rx_fiber3), '<b>RxFiber3: {} dBm</b>'.format(rx_fiber3))}"
@@ -551,8 +553,10 @@ class ThreadMonitorAlarms(QThread):
                             # Вызываем метод parse_message получаем дату и значение парамеров с оборудования
                             date, description = self._parse_message(line)
                             if int(temp_fiber2) > self.hight_temp_fiber:
+                                # Перезаписываем значение переменной description заменив параметр
+                                description = description.replace('TempFiber2: {} *C'.format(temp_fiber2), '<b>TempFiber2: {} *C</b>'.format(temp_fiber2))
                                 # Формируем сообщение которое отправим пользователю
-                                message = f"{date} {self.name}: <b>Высокая температура транспондера MAC&C</b> {description.replace('TempFiber2: {} *C'.format(temp_fiber2), '<b>TempFiber2: {} *C</b>'.format(temp_fiber2))}"
+                                message = f"{date} {self.name}: <b>Высокая температура транспондера MAC&C</b> {description}"
                             if int(temp_fiber3) > self.hight_temp_fiber:
                                 # Формируем сообщение которое отправим пользователю
                                 message = f"{date} {self.name}: <b>Высокая температура транспондера MAC&C</b> {description.replace('TempFiber3: {} *C'.format(temp_fiber3), '<b>TempFiber3: {} *C</b>'.format(temp_fiber3))}"
@@ -573,8 +577,10 @@ class ThreadMonitorAlarms(QThread):
                             # Вызываем метод parse_message получаем дату и значение парамеров с оборудования
                             date, description = self._parse_message(line)
                             if int(temp_fiber2) < self.low_temp_fiber:
+                                # Перезаписываем значение переменной description заменив параметр
+                                description = description.replace('TempFiber2: {} *C'.format(temp_fiber2), '<b>TempFiber2: {} *C</b>'.format(temp_fiber2))
                                 # Формируем сообщение которое отпавим пользователю
-                                message = f"{date} {self.name}: Низкая температура транспондера MAC&C: {description.replace('TempFiber2: {} *C'.format(temp_fiber2), '<b>TempFiber2: {} *C</b>'.format(temp_fiber2))}"
+                                message = f"{date} {self.name}: Низкая температура транспондера MAC&C: {description}"
                             if int(temp_fiber3) < self.low_temp_fiber:
                                 # Формируем сообщение которое отпавим пользователю
                                 message = f"{date} {self.name}: Низкая температура транспондера MAC&C: {description.replace('TempFiber3: {} *C'.format(temp_fiber3), '<b>TempFiber3: {} *C</b>'.format(temp_fiber3))}"
@@ -902,45 +908,79 @@ class ThreadMonitorAlarms(QThread):
                         port = self._parse_port(line)
                         channel_name = self._parse_channel_name(ip, port)
                         #out_octets = self._parse_octets_on_port(line)
-                        #in_octets = self._parse_in_octets_on_port(line)
+                        sla_status = self._parse_sla_status(line)
                         channel_status = self._parse_status_channel(line)
                         oper_status = self._parse_status_port(line)
                         #
-                        if channel_status and oper_status:
+                        if channel_status and oper_status and sla_status:
                             #
-                            if (channel_status == 'Down' or oper_status == 'Down') and ip not in self.dict_messages['channel']:
-                                # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
-                                date, description = self._parse_message(line)
-                                # Формируем сообщение для отправки
-                                message = f'{date} <b>Пропадание канала "{channel_name}":</b> {description}'
-                                # Отправляем сообщение
-                                status_code = self._sender(message)
-                                if status_code == 200:
-                                    # Добавляем данные об аварии в dict_messages
-                                    self.dict_messages['channel'][ip] = {port:message}
-                            elif (channel_status == 'Down' or oper_status == 'Down') and port not in self.dict_messages['channel'][ip]:
-                                # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
-                                date, description = self._parse_message(line)
-                                # Формируем сообщение для отправки
-                                message = f'{date} <b>Пропадание канала "{channel_name}":</b> {description}'
-                                # Отправляем сообщение
-                                status_code = self._sender(message)
-                                if status_code == 200:
-                                    # Добавляем данные об аварии в dict_messages
-                                    self.dict_messages['channel'][ip][port] = message
-                            # Проверяем если количество трафика равно Мбит/c или Кбит/c и статсу порта Up и сообщение с таким ip есть в словаре
-                            elif channel_status == 'Up' and oper_status == 'Up' and ip in self.dict_messages['channel']:
-                                #
-                                if self.dict_messages['channel'][ip].get(port):
-                                    # Вызываем метод _parse_message, получаем дату и время устранения аварии и описание параметров порта
+                            if sla_status != 'None':
+                                #print('sla_status', sla_status)
+                                if ((channel_status == 'Down' or oper_status == 'Down') and sla_status == 'Down') and ip not in self.dict_messages['channel']:
+                                    # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
                                     date, description = self._parse_message(line)
-                                    message = f'{date} <b>Работа канала "{channel_name}" восстановлена:</b> {description}'
+                                    # Формируем сообщение для отправки
+                                    message = f'{date} <b>Пропадание канала "{channel_name}":</b> {description}'
                                     # Отправляем сообщение
                                     status_code = self._sender(message)
                                     if status_code == 200:
-                                    # Удаляем сообщение об аварии из dict_messages
-                                        del self.dict_messages['channel'][ip][port]
-
+                                        # Добавляем данные об аварии в dict_messages
+                                        self.dict_messages['channel'][ip] = {port:message}
+                                elif ((channel_status == 'Down' or oper_status == 'Down') and sla_status == 'Down') and port not in self.dict_messages['channel'][ip]:
+                                    # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
+                                    date, description = self._parse_message(line)
+                                    # Формируем сообщение для отправки
+                                    message = f'{date} <b>Пропадание канала "{channel_name}":</b> {description}'
+                                    # Отправляем сообщение
+                                    status_code = self._sender(message)
+                                    if status_code == 200:
+                                        # Добавляем данные об аварии в dict_messages
+                                        self.dict_messages['channel'][ip][port] = message
+                                # Проверяем если количество трафика равно Мбит/c или Кбит/c и статсу порта Up и сообщение с таким ip есть в словаре
+                                elif (channel_status == 'Up' and oper_status == 'Up' and sla_status == 'Up') and ip in self.dict_messages['channel']:
+                                    #
+                                    if self.dict_messages['channel'][ip].get(port):
+                                        # Вызываем метод _parse_message, получаем дату и время устранения аварии и описание параметров порта
+                                        date, description = self._parse_message(line)
+                                        message = f'{date} <b>Работа канала "{channel_name}" восстановлена:</b> {description}'
+                                        # Отправляем сообщение
+                                        status_code = self._sender(message)
+                                        if status_code == 200:
+                                        # Удаляем сообщение об аварии из dict_messages
+                                            del self.dict_messages['channel'][ip][port]
+                            else:
+                                if (channel_status == 'Down' or oper_status == 'Down') and ip not in self.dict_messages['channel']:
+                                    # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
+                                    date, description = self._parse_message(line)
+                                    # Формируем сообщение для отправки
+                                    message = f'{date} <b>Пропадание канала "{channel_name}":</b> {description}'
+                                    # Отправляем сообщение
+                                    status_code = self._sender(message)
+                                    if status_code == 200:
+                                        # Добавляем данные об аварии в dict_messages
+                                        self.dict_messages['channel'][ip] = {port:message}
+                                elif (channel_status == 'Down' or oper_status == 'Down') and port not in self.dict_messages['channel'][ip]:
+                                    # Вызываем метод _parse_message, получаем дату и время возниконовения аварии и описание неисправности
+                                    date, description = self._parse_message(line)
+                                    # Формируем сообщение для отправки
+                                    message = f'{date} <b>Пропадание канала "{channel_name}":</b> {description}'
+                                    # Отправляем сообщение
+                                    status_code = self._sender(message)
+                                    if status_code == 200:
+                                        # Добавляем данные об аварии в dict_messages
+                                        self.dict_messages['channel'][ip][port] = message
+                                # Проверяем если количество трафика равно Мбит/c или Кбит/c и статсу порта Up и сообщение с таким ip есть в словаре
+                                elif (channel_status == 'Up' and oper_status == 'Up') and ip in self.dict_messages['channel']:
+                                    #
+                                    if self.dict_messages['channel'][ip].get(port):
+                                        # Вызываем метод _parse_message, получаем дату и время устранения аварии и описание параметров порта
+                                        date, description = self._parse_message(line)
+                                        message = f'{date} <b>Работа канала "{channel_name}" восстановлена:</b> {description}'
+                                        # Отправляем сообщение
+                                        status_code = self._sender(message)
+                                        if status_code == 200:
+                                        # Удаляем сообщение об аварии из dict_messages
+                                            del self.dict_messages['channel'][ip][port]
                             # Проверяем если ip адрес есть в dict_messages['error']
                             if ip in self.dict_messages['error']:
                                 # Вызываем метод _parse_message передав ему строку с выводом с оборудования и получаем дату и описание неисправности
