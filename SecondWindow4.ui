@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1281</width>
-    <height>600</height>
+    <width>1194</width>
+    <height>560</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -233,6 +233,21 @@ p, li { white-space: pre-wrap; }
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="tab_3">
+         <attribute name="title">
+          <string>Каналы</string>
+         </attribute>
+         <widget class="QTextBrowser" name="textBrowser_7">
+          <property name="geometry">
+           <rect>
+            <x>-1</x>
+            <y>0</y>
+            <width>1191</width>
+            <height>461</height>
+           </rect>
+          </property>
+         </widget>
+        </widget>
        </widget>
       </item>
      </layout>
@@ -246,21 +261,40 @@ p, li { white-space: pre-wrap; }
        <number>100</number>
       </property>
       <property name="rightMargin">
-       <number>50</number>
+       <number>30</number>
       </property>
       <item>
-       <widget class="QCheckBox" name="Hidden_message_check_box">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <weight>50</weight>
-          <bold>false</bold>
-         </font>
+       <layout class="QVBoxLayout" name="verticalLayout_9">
+        <property name="spacing">
+         <number>0</number>
         </property>
-        <property name="text">
-         <string>Не выводить аварию в отдельном окне</string>
-        </property>
-       </widget>
+        <item>
+         <widget class="QCheckBox" name="Hidden_message_check_box">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+            <weight>50</weight>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Не выводить окно с аварией</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkSound">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Без звука</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QPushButton" name="switch_off_sound_btn">
@@ -283,28 +317,38 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="repeat_sound">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <property name="spacing">
+         <number>0</number>
         </property>
-        <property name="text">
-         <string>Повторять мелодию</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkSound">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Без звука</string>
-        </property>
-       </widget>
+        <item>
+         <widget class="QRadioButton" name="speech_message">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Голосовое оповещение</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="sound_message">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Звуковое оповещение</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -315,7 +359,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1281</width>
+     <width>1194</width>
      <height>21</height>
     </rect>
    </property>
