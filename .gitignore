@@ -1,3 +1,4 @@
-*.txt
 *.ui
-logs/
+*.txt
+Resources/
+__pycache__/

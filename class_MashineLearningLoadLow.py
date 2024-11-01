@@ -1,10 +1,10 @@
 #
+from typing import Optional, List, Dict
 import pandas as pd
 from pathlib import Path 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from PyQt5.QtCore import QThread
-
 
 class MashineLearningLoadLow(QThread):
     def __init__(self) -> None:
@@ -29,14 +29,14 @@ class MashineLearningLoadLow(QThread):
         self.rfc.fit(X_train, y_train)
 
     # Метод возращает строку со значением состояния канала, принимает на вход значения количества трафика на порту
-    def predict(self, sample) -> str:
+    def predict(self, sample: Dict[str, List[int]]) -> Optional[str]:
         # Преобразуем словарь sample в Data Frame
         sample_df = pd.DataFrame(data=sample, columns=self.X.columns)
         try:
-            result = self.rfc.predict(sample_df)
+            result: List[str] = self.rfc.predict(sample_df)
             return result[0]
         except ValueError:
-            pass
+            return None
 
 if __name__ == '__main__':
 

@@ -1,4 +1,6 @@
 #
+from __future__ import annotations
+from typing import Tuple, Union, Dict, Any, List, Optional
 import sqlite3
 from pathlib import Path
 import json
@@ -6,12 +8,14 @@ import time
 
 class ConnectSqlDB:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.path_sql_db = Path(Path.cwd(), "Resources", "chatbot.db")
         # Указываем где расположен файл с БД
         #self.path_sql_db = r'C:\inetpub\wwwroot\ApplicationWeb\Resources\chatbot.db'
         # Первое что мы должны сделать создать соединение с БД, указав путь к файлу:
-        self.conn = sqlite3.connect(self.path_sql_db)
+        # timeout - сколько секунд соединение должно ждать, прежде чем поднять сигнал OperationalError, 
+        # когда таблица заблокирована, по умолчанию 5 сек.
+        self.conn = sqlite3.connect(self.path_sql_db, timeout=10)
         #
         self.cursor = self.conn.cursor()
         # Включаем внешние ключи в базе данных SQLite командой PRAGMA
@@ -20,68 +24,65 @@ class ConnectSqlDB:
         # Подтверждаем действие
         self.conn.commit()
     
-    def __enter__(self):
+    def __enter__(self) -> ConnectSqlDB:
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         self.conn.close() 
+
     # Метод добавляет данные в БД
-    def add_db(self, **kword):
-        # Проверяем если ключивой аргумент table равен Users - имя таблицы в БД
-        if kword['table'] == 'Users':
-            # Формируем запрос: Добавить в таблицу данные user_name и description
-            query = "INSERT INTO Users (user_name, description) VALUES (?, ?)"
-            # Делаем запрос к БД на добавление данных в таблицу Users, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['user_name'], kword['description']))
-            # Подтверждаем действие
-            self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Devices - имя таблицы в БД
-        elif kword['table'] == 'Devices':
-            # Формируем запрос: Добавить в таблицу Devices значения key, ip, description
-            query = "INSERT INTO Devices (model, ip, description, num_window) VALUES (?, ?, ?, ?)"
-            # Делаем запрос к БД на добавление данных в таблицу Devices, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['model'], kword['ip'], kword['description'], kword['num_window'],))
-            # Подтверждаем действие
-            self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Ports - имя таблицы в БД
-        elif kword['table'] == 'Ports':
-            # Формируем запрос: Добавить в таблицу Ports значения ip_addr, port, description, provider
-            query = "INSERT INTO Ports (ip_addr, port, sla, description, provider, loading) VALUES (?, ?, ?, ?, ?, ? )"
-            # Делаем запрос к БД на добавление данных в таблицу Ports, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['ip'], kword['port'], kword['sla'], kword['description'], kword['provider'], kword['load']))
-            # Подтверждаем действие
-            self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Pid - имя таблицы в БД
-        elif kword['table'] == 'Pid':
-            # Формируем запрос: Добавить в таблицу Pid значения process_name, process_id
-            query = "Replace INTO Pid (process_name, process_id) VALUES (?, ?)"
-            # Делаем запрос к БД на добавление данных в таблицу Pid, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['process_name'], kword['process_id']))
-            # Подтверждаем действие
-            self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Settings - имя таблицы в БД
-        elif  kword['table'] == 'Settings':
-            # Если в запросе передано имя столбца таблицы alarms
-            if kword.get('alarms'):
-                # Формируем запрос: Добавить/Заменить данные в столбцах alarms и num таблицы Settings на полученные значения
-                query = "Replace INTO Settings (alarms, num) VALUES (?, ?)"
-                # Делаем запрос к БД на добавление данных в таблицу Settings, передаем запрос query в который подставляем kword аргументы 
-                self.cursor.execute(query, (kword['alarms'], kword['num']))
-                # Подтверждаем действие
-                self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Bot - имя таблицы в БД
-        elif  kword['table'] == 'Bot':
-            # Если в запросе передано имя столбца таблицы alarms
-            if kword.get('title'):
-                # Формируем запрос: Добавить/Заменить данные в столбцах title и value таблицы Bot на полученные значения
-                query = "Replace INTO Bot (title, value) VALUES (?, ?)"
-                # Делаем запрос к БД на добавление данных в таблицу Bot, передаем запрос query в который подставляем kword аргументы 
-                self.cursor.execute(query, (kword['title'], kword['value']))
-                # Подтверждаем действие
-                self.conn.commit()
+    def add_db(self, **kword: Union[str, int]) -> None:
+        # Строка для добавления параметров (ключ словаря)
+        key_string = ''
+        # Строка для добавления ? знаков 
+        line = ''
+        # Кортеж для добавления значений (значения в словаре)
+        tuple_values: Tuple[Union[str, int], ...] = ()
+        for key, value in kword.items():
+            # Если ключ не равен table
+            if key != 'table':
+                    key_string += f'{key},'
+                    line += '?, '
+                    tuple_values += (value,)
+        # Удаляем в конце строки запятую и перезаписываем значение
+        key_string = key_string.rstrip(',')
+        # Удалеям в конце строки запятую и перезаписываем значение
+        line = line.rstrip(', ')
+        # Формируем запрос: Добавить в таблицу Ports значения ip_addr, port, description, provider
+        query = "INSERT INTO {} ( {} ) VALUES ( {} )".format(kword['table'], key_string, line)
+        # Делаем запрос к БД на добавление данных в таблицу Ports, передаем запрос query в который подставляем kword аргументы 
+        self.cursor.execute(query, tuple_values)
+        # Подтверждаем действие
+        self.conn.commit()
+        
+    # Метод заменяет значения в таблице на полученные от пользователя
+    def replace_val_db(self, **kword: Union[str, int, float]) -> None:
+        # Строка для добавления параметров (ключ словаря)
+        key_string = ''
+        # Строка для добавления ? знаков 
+        line = ''
+        # Кортеж для добавления значений (значения в словаре)
+        tuple_values: Tuple[Union[str, int, float], ...] = ()
+        for key, value in kword.items():
+            # Если ключ не равен table
+            if key != 'table':
+                    key_string += f'{key},'
+                    line += '?, '
+                    tuple_values += (value,)
+        # Удаляем в конце строки запятую и перезаписываем значение
+        key_string = key_string.rstrip(',')
+        # Удалеям в конце строки запятую и перезаписываем значение
+        line = line.rstrip(', ')
+        # Формируем запрос: Заменить данные в таблице, подставляя в запрос значение: 
+        # строку key_string и line из ключевых аргументов, которые передал пользователь
+        query = "Replace INTO {} ( {} ) VALUES ( {} )".format(kword['table'], key_string, line)
+        # Делаем запрос к БД на замену значений в таблице, передаем запрос query и кортеж со значениями 
+        self.cursor.execute(query, tuple_values)
+        # Подтверждаем действие
+        self.conn.commit()
 
     # Метод добавляет chat_id для имени пользователя у которого ячейка чат id не заполнена
-    def add_chat_id(self, **kword):
+    def add_chat_id(self, **kword: Union[str, int]) -> None:
         # Добавить значение chat_id в таблицу "Users" ГДЕ user_name = kword['user_name'] И chat_id = None 
         query = "UPDATE Users set chat_id = ? WHERE user_name = ? and chat_id ISNULL"
         # Делаем запрос к БД на обнавление данных в таблице Users, передаем запрос query в который подставляем kword аргументы 
@@ -90,7 +91,7 @@ class ConnectSqlDB:
         self.conn.commit()
     
     # Метод добавляет количество трафика в таблицу Ports 
-    def add_traffic(self, value, **kword):
+    def add_traffic(self, value: str, **kword: Union[str, int]) -> None:
         # Добавить значение traffic в таблицу "Ports" ГДЕ ip_addr= kword['ip'] И port = kword['port'] 
         query = "UPDATE Ports set {} = ? WHERE ip_addr = ? and port = ?".format(value)
         # Делаем запрос к БД на обнавление данных в таблице Ports, передаем запрос query в который подставляем kword аргументы 
@@ -98,368 +99,180 @@ class ConnectSqlDB:
         # Подтверждаем действия
         self.conn.commit()
 
-    def get_join_data(self, *args):
+    def get_join_data(self, *args: str) -> List[Tuple[str, Optional[int], Optional[int]]]:
         # Формируем запрос, получить данные из таблиц Devices И Ports ip адрес которых равен значению
-        query = "SELECT * FROM Devices join Ports ON Devices.ip = ? AND Ports.ip_addr = ?"
+        query = "SELECT ip_addr, port, sla FROM Devices join Ports ON Devices.ip = ? AND Ports.ip_addr = ?"
         # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
         list_tuple_data = self.cursor.execute(query, (args[0],args[0])).fetchall()# --> list[(),]
         return list_tuple_data
 
     # Метод удаляет пользователя из БД
-    def del_db(self, **kword):
-        # Проверяем если ключивой аргумент table равен Users 
-        if kword['table'] == 'Users':
-            # Формируем запрос: Удалить из таблицы данные ГДЕ user_name = kword['user_name'] И description = kword['description']
-            query = "DELETE FROM Users WHERE user_name = ? and description = ?"
-            # Делаем запрос к БД на удаление данных из таблицы Users, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['user_name'], kword['description']))
-            # Подтверждаем действие
-            self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Devices
-        elif kword['table'] == 'Devices':
-           # Формируем запрос: Удалить из таблицы данные ГДЕ ip = kword['ip']
-           query = "DELETE FROM Devices WHERE ip = ?"
-           # Делаем запрос к БД на удаление данных из таблицы Devices, передаем запрос query в который подставляем kword аргументы 
-           self.cursor.execute(query, (kword['ip'],))
-           # Подтверждаем действие
-           self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Ports
-        elif kword['table'] == 'Ports':
-            if kword.get('ip') and kword.get('port'):  
-                # Формируем запрос: Удалить из таблицы данные ГДЕ port = kword['port'] И ip_addr = kword['ip']
-                query = "DELETE FROM Ports WHERE port = ? AND ip_addr = ?"
-                # Делаем запрос к БД на удаление данных из таблицы Ports, передаем запрос query в который подставляем kword аргументы 
-                self.cursor.execute(query, (kword['port'], kword['ip']))
-                # Подтверждаем действие
-                self.conn.commit()
-            elif kword.get('ip'):
-                # Формируем запрос: Удалить из таблицы данные ГДЕ ip_addr = kword['ip']
-                query = "DELETE FROM Ports WHERE ip_addr = ?"
-                # Делаем запрос к БД на удаление данных из таблицы Ports, передаем запрос query в который подставляем kword аргументы 
-                self.cursor.execute(query, (kword['ip'],))
-                # Подтверждаем действие
-                self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Pid
-        elif kword['table'] == 'Pid':
-            # Формируем запрос: Удалить из таблицы данные ГДЕ process_name = kword['process_name']
-            query = "DELETE FROM Pid WHERE process_name = ?"
-            # Делаем запрос к БД на удаление данных из таблицы Pid, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['process_name'],))
-            # Подтверждаем действие
-            self.conn.commit()
-        # Проверяем если ключивой аргумент table равен Bot
-        elif kword['table'] == 'Bot':
-            # Формируем запрос: Удалить из таблицы данные ГДЕ title = kword['title']
-            query = "DELETE FROM Bot WHERE title = ?"
-            # Делаем запрос к БД на удаление данных из таблицы Bot, передаем запрос query в который подставляем kword аргументы 
-            self.cursor.execute(query, (kword['title'],))
-            # Подтверждаем действие
-            self.conn.commit()
-        
-    # Метод делает запрос к БД, для получения конкретного значения из таблицы 
-    def get_db(self, *args, **kword) -> list:
+    def del_db(self, **kword: Union[str, int]) -> None:
+        # Строка для добавления параметров (ключ словаря)
+        key_string = ''
+        # Кортеж для добавления значений (значения в словаре)
+        tuple_values: Tuple[Union[str, int], ...] = ()
+        for key, value in kword.items():
+            # Если ключ не равен table
+            if key != 'table':
+                    key_string += f'{key} = ? and '
+                    tuple_values += (value,)
+        # Удаляем в конце строки запятую и перезаписываем значение
+        key_string = key_string.rstrip('and ')
+        # Формируем запрос: Удалить значение из таблицы,  подставляя в запрос строку key_string из 
+        # ключевых аргументов и кортеж значений, которые передал пользователь
+        query = "DELETE FROM {} WHERE {}".format(kword['table'], key_string)
+        # Делаем запрос к БД на удаление данных из таблицы, передаем запрос query и кортеж  
+        self.cursor.execute(query, tuple_values)
+        # Подтверждаем действие
+        self.conn.commit()
+
+    # Метод делает запрос к БД, возвращает кортеж со значением  
+    def get_db(self, *args: str, **kword: Union[str, int]) -> Tuple[Union[str, int, None], ...]:
         # Формируем пустую строку и запсываем ее в переменную line
         line = ''
         for arg in args:
             line += f"{arg},"
         line = line.rstrip(',')
-        # Проверяем если ключивой аргумент table равен Users 
-        if kword['table'] == 'Users':
-            # Если мы получили ключевые аргументы user_name и description
-            if kword.get('name') and kword.get('description'):
-                # Формируем запрос: Получить user_name ГДЕ user_name = kword['user_name'] и description=kword['description']
-                query = "SELECT {} FROM Users WHERE user_name= ? and description = ?".format(line)
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['name'], kword['description'])).fetchall()# --> list[(),] 
-            # Если мы получили ключевые аргументы user_name и chat_id:
-            elif kword.get('name') and kword.get('chat') == None:
-                # Формируем запрос: Получить args ГДЕ user_name = kword['name'] и chat=None
-                query = "SELECT {} FROM Users WHERE user_name= ? and chat_id ISNULL".format(line)
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['name'],)).fetchall()# --> list[(),]
-            # Если мы получили ключевые аргументы user_name и chat_id
-            elif kword.get('name') and kword.get('chat'):
-                # Формируем запрос: Получить user_name ГДЕ user_name = kword['user_name'] и chat_id=kword['chat_id']
-                query = "SELECT {} FROM Users WHERE user_name= ? and chat_id = ?".format(line)
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['name'], kword['chat'])).fetchall()# --> list[(),] 
-        # Проверяем если ключивой аргумент table равен Devices
-        elif kword['table'] == 'Devices':
-            # Если мы получили ключевые аргументы model
-            if kword.get('model'):
-                # Формируем запрос: Получить args, ГДЕ model = kword['model']
-                query = "SELECT {} FROM Devices WHERE model = ?".format(line)
-                # Делаем запрос к БД на получение данных передав строку запроса в которую подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['model'],)).fetchall()
-            # Если мы получили ключевые аргументы ip
-            elif kword.get('ip'):
-                # Формируем запрос: Получить args ГДЕ ip = kword['ip']
-                query = "SELECT {} FROM Devices WHERE ip = ?".format(line)
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['ip'],)).fetchone()
-        # Проверяем если ключивой аргумент table равен Ports
-        elif kword['table'] == 'Ports':
-            # Если мы получили ключевые аргументы key и description
-            if kword.get('ip') and kword.get('port'):
-                # Формируем запрос: Получить args ГДЕ ip_addr = kword['ip'] И port = kword['port']
-                query = "SELECT {} FROM Ports WHERE ip_addr = ? and port = ?".format(line)
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['ip'], kword['port'])).fetchall()
-        # Проверяем если ключивой аргумент table равен Pid
-        elif kword['table'] == 'Pid':
-            # Если мы получили ключевые аргументы process_name
-            if kword.get('process_name'):
-                # Формируем запрос: Получить process_id ГДЕ process_id = kword['process_id']
-                query = "SELECT process_id FROM Pid WHERE process_name = ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['process_name'],)).fetchall()
-        # Проверяем если ключивой аргумент table равен Settings
-        elif kword['table'] == 'Settings':
-            # Если мы получили ключевые аргументы alarms
-            if kword.get('alarms'):
-                # Формируем запрос: Получить num ГДЕ alarms = kword['alarms']
-                query = "SELECT num FROM Settings WHERE alarms = ?"
-                # Делаем запрос к БД на получение данных передав запрос query в который подставляем kword аргументы
-                list_tuple_name = self.cursor.execute(query, (kword['alarms'],)).fetchall()
-        # Проверяем если ключивой аргумент table равен Bot
-        elif kword['table'] == 'Bot':
-            # Если мы получили ключевые аргументы title
-            if kword.get('title'):
-                # Формируем запрос: Получить value ГДЕ title = kword['title']
-                query = "SELECT value FROM Bot WHERE title = ?"
-                #
-                list_tuple_name = self.cursor.execute(query, (kword['title'],)).fetchall()
-        # Возвращаем кортеж со значениями
-        return list_tuple_name
-
+        string = ''
+        tuple_values: Tuple[Union[str, int], ...] = ()
+        #
+        for key, value in kword.items():
+            if key != 'table':
+                if value == 'ISNULL':
+                    string += f'{key} {value} and '
+                else:
+                    string += f'{key} = ? and '
+                    tuple_values += (value,)
+        string = string.rstrip('and ')
+        # Формируем запрос: Получить значение из таблицы, подставляя в запрос строку line из 
+        # позиционных аргументов (args) и строку string из ключевых аргументов, которые передал пользователь
+        query = "SELECT {} FROM {} WHERE {}".format(line, kword['table'], string)
+        # Делаем запрос к БД на получение данных передав строку запроса в которую подставляем kword аргументы
+        answer: Tuple[Union[str, int, None]] = self.cursor.execute(query, tuple_values).fetchone() # --> tuple(values,)
+        return answer
+    
     # Метод делает запрос к БД, возвращает список со значениями
-    def get_values_list_db(self, *args, table) -> list:
-        # Проверяем если ключивой аргумент table равен Users
-        if table == 'Users':
-            # Если мы получили позиционные аргументы user_name и chat_id и description
-            if 'user_name' in args and 'chat_id' in args and 'description' in args :
-                # Формируем запрос: Получить user_name и chat_id и description из таблицы Users, подставляя в запрос позиционные ars аргументы
-                query = "SELECT {}, {}, {} FROM Users".format(args[0], args[1], args[2])
-                # Делаем запрос к БД на получение данных передав запрос query
-                self.cursor.execute(query)
-                # Получаем список кортежей с именами пользователей, chat_id и описанием
-                return self.cursor.fetchall() # --> list[(),()]
-            # Если мы получили позиционные аргументы user_name и chat_id и description
-            elif 'user_name' in args and 'chat_id' in args or 'user_name' in args and 'description' in args \
-                or 'chat_id' in args and 'description' in args:
-                # Формируем запрос: Получить user_name и chat_id ИЛИ user_name, description ИЛИ chat_id, description из таблицы Users, подставляя в запрос позиционные args аргументы
-                query = "SELECT {}, {} FROM Users".format(args[0], args[1])
-                # Делаем запрос к БД на получение данных передав запрос query
-                self.cursor.execute(query)
-                # Получаем список кортежей с именами пользователей и chat_id
-                return self.cursor.fetchall() # --> list[(),()] 
-            # Если мы получили позиционные аргументы user_name или chat_id или description
-            elif 'user_name' in args or 'chat_id' in args or 'description' in args:
-                # Формируем запрос: Получить user_name ИЛИ chat_id ИЛИ description из таблицы Users, подставляя в запрос позиционные args аргументы
-                query = "SELECT {} FROM Users".format(args[0])
-                # Делаем запрос к БД на получение данных передав запрос query
-                self.cursor.execute(query)
-        # Проверяем если ключивой аргумент table равен Devices
-        elif table == 'Devices':
-            # Если мы получили позиционные аргументы model и ip и description
-            if 'model' in args and 'ip' in args and 'description' in args:
-               # Формируем запрос: Получить model, ip, description из таблицы Devices, подставляя в запрос позиционные args аргументы
-                query = "SELECT {}, {}, {} FROM Devices".format(args[0], args[1], args[2])
-                 # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query)
-                return result.fetchall()
-            # Если мы получили позиционные аргументы model и ip и description
-            elif 'model' in args and 'ip' in args or 'key' in args and 'description' in args or \
-                'ip' in args and 'description' in args:
-                # Формируем запрос: Получить model, ip ИЛИ key, description ИЛИ ip, description из таблицы Devices, подставляя в запрос позиционные args аргументы
-                query = "SELECT {}, {} FROM Devices".format(args[0], args[1])
-                 # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query)
-                return result.fetchall()
-            # Если мы получили позиционные аргументы model или ip или description
-            elif 'model' in args or 'ip' in args or 'description' in args:
-                # Формируем запрос: Получить model ИЛИ ip ИЛИ description из таблицы Devices, подставляя в запрос позиционные args аргументы
-                query = "SELECT {} FROM Devices".format(args[0])
-                # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query)
-        # Проверяем если ключивой аргумент table равен Ports
-        elif table == 'Ports':
-            # Если мы получили позиционные аргументы port и ip и description
-            if 'port' in args and 'ip_addr' in args and 'description' in args:
-               # Формируем запрос: Получить key, ip, description из таблицы Ports, подставляя в запрос позиционные args аргументы
-                query = "SELECT {}, {}, {} FROM Ports".format(args[0], args[1], args[2])
-                 # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query)
-                return result.fetchall()
-            # Если мы получили позиционные аргументы port и sla и ip и loading
-            elif 'port' in args and 'sla' in args and 'ip_addr' in args and 'loading' in args:
-                # Формируем запрос: Получить port, ip_addr, loading из таблицы Ports, подставляя в запрос позиционные args аргументы
-                query = "SELECT {}, {}, {}, {} FROM Ports".format(args[0], args[1], args[2], args[3])
-                 # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query)
-                return result.fetchall()
-            # Если мы получили позиционные аргументы port и ip и loading
-            #elif 'port' in args and 'ip_addr' in args and 'loading' in args:
-                # Формируем запрос: Получить port, ip_addr, loading из таблицы Ports, подставляя в запрос позиционные args аргументы
-                #query = "SELECT {}, {}, {} FROM Ports".format(args[0], args[1], args[2])
-                 # Делаем запрос к БД на получение данных передав запрос query
-                #result = self.cursor.execute(query)
-                #return result.fetchall()
-            # Если мы получили позиционные аргументы port и ip и description
-            elif ('port' in args and 'ip_addr') in args or ('port' in args and 'description') in args or \
-                ('ip_addr' in args and 'description') in args:
-                # Формируем запрос: Получить port, ip_addr ИЛИ port, description ИЛИ ip_addr, description из таблицы Ports, подставляя в запрос позиционные args аргументы
-                query = "SELECT {}, {} FROM Ports".format(args[0], args[1])
-                 # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query)
-                return result.fetchall()
-            # Если мы получили позиционные аргументы port или ip_addr или description
-            elif 'port' in args or 'ip_addr' in args or 'description' in args:
-                # Формируем запрос: Получить port ИЛИ ip_addr ИЛИ description из таблицы Devices, подставляя в запрос позиционные args аргументы
-                query = "SELECT {} FROM Ports".format(args[0])
-                # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query)
-        # Проверяем если ключивой аргумент table равен Alarms
-        elif table == 'Alarms':
-            # Если мы получили позиционные аргументы data
-            if 'data' in args:
-                # Формируем запрос: Получить data - это словарь json из таблицы Alarms, подставляя в запрос позиционные args аргументы
-                query = "SELECT {} FROM Alarms".format(args[0])
-                # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query).fetchone() # ->list[({}),]
-                # Считываем json данные и записываем в переменную dic
-                dic = json.loads(result[0]) # -> dict{z:{}}, x:{}}
-                return dic
-        # Проверяем если ключивой аргумент table равен Date(таблица в которой хранятся данные дата и время начала аварий)
-        elif table == 'Duration':
-            # Если мы получили позиционные аргументы data
-            if 'data' in args:
-                # Формируем запрос: Получить data - это словарь json из таблицы Date, подставляя в запрос позиционные args аргументы
-                query = "SELECT {} FROM Duration".format(args[0])
-                # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query).fetchone() # ->list[({}),]
-                # Считываем json данные и записываем в переменную dic
-                dic = json.loads(result[0]) # -> dict{z:{}}, x:{}}
-                return dic
-        # Проверяем если ключивой аргумент table равен Date(таблица в которой хранятся данные дата и время начала аварий)
-        elif table == 'Interim':
-            # Если мы получили позиционные аргументы data
-            if 'data' in args:
-                # Формируем запрос: Получить data - это словарь json из таблицы Date, подставляя в запрос позиционные args аргументы
-                query = "SELECT {} FROM Interim".format(args[0])
-                # Делаем запрос к БД на получение данных передав запрос query
-                result = self.cursor.execute(query).fetchone() # ->list[({}),]
-                # Считываем json данные и записываем в переменную dic
-                dic = json.loads(result[0]) # -> dict{z:{}}, x:{}}
-                return dic
-        # Проверяем если ключивой аргумент table равен Settings
-        elif table == 'Settings':
-             # Формируем запрос: Получить alarms, num из таблицы Settings, подставляя в запрос позиционные args аргументы
-            query = "SELECT {}, {} FROM Settings".format(args[0], args[1])
-            # Делаем запрос к БД на получение данных передав запрос query
-            result = self.cursor.execute(query)
-            return result.fetchall()
-        # Получаем список кортежей с запрошенными значениями
-        list_tuple = self.cursor.fetchall() # --> list[(),()]
-        # Создаем генератор списка перебираем список кортежей, если в кортеже есть значение chat_id, 
-        # то добавляем в список list_name
-        list_name = [name[0] for name in list_tuple if name[0]] # --> list[]
-        return list_name
+    def get_values_list_db(self, *args: str, **kword: Union[str, int]) -> List[Tuple[Union[str, int, None], ...]]:
+        # Формируем пустую строку и запсываем ее в переменную line
+        line = ''
+        # Перебираем позиционные аргументы (args) переданные пользователем и добавляем их в строку через запятую
+        for arg in args:
+            line += f"{arg},"
+        # Удаляем запятую в конце строки 
+        line = line.rstrip(',')
+        # Если получили ключевые аргументы
+        if kword and len(kword) > 1:
+            # Формируем пустую строку в которую будем добавлять значения
+            values = ''
+            # Пернбираем через цикл ключ и значения в словаре
+            for key, value in kword.items():
+                # Если key не равен значению table
+                if key != 'table':
+                    if value == 'IS not null':
+                        # Добавляем полученные значения key, value в строку 
+                        values += f'{key} {value} and '
+                    else:
+                       values += f'{key} = "{value}" and ' 
+            # Удаляем в конце строки значение and
+            values = values.rstrip('and ')
+            # Формируем запрос: Получить значение из таблицы, подставляя в запрос строку line из 
+            # позиционных аргументов (args) и строку values из ключевых аргументов, которые передал пользователь
+            query = "SELECT {} FROM {} WHERE {}".format(line, kword['table'], values)
+        else:
+            # Формируем запрос: Получить данные из таблицы, подставляя в запрос строку line из 
+            # позиционных (args) аргументов, которые передал пользователь
+            query = "SELECT {} FROM {}".format(line, kword['table'])
+        # Делаем запрос к БД на получение данных передав запрос query
+        self.cursor.execute(query)
+        # Получаем список кортежей с данными, которые нам нужны
+        return self.cursor.fetchall() # --> list[(),()]
+        
+    # Метод делает запрос к БД на получение данных, возвращает словарь
+    def get_values_dict_db(self, *args: str, **kword: str) -> Dict[str, Any]:
+        # Формируем пустую строку и запсываем ее в переменную line
+        line = ''
+        # Перебираем позиционные аргументы (args) переданные пользователем и добавляем их в строку через запятую
+        for arg in args:
+            line += f"{arg},"
+        # Удаляем запятую в конце строки 
+        line = line.rstrip(',')
+        # Формируем запрос: Получить data - это словарь json из таблицы в БД,
+        # подставляя в запрос позиционные args аргументы и ключевые аргументы kword
+        query = "SELECT {} FROM {}".format(line, kword['table'])
+        # Делаем запрос к БД на получение данных передав запрос query
+        result = self.cursor.execute(query).fetchone() # ->list[({}),]
+        try:
+            # Считываем json данные и записываем в переменную dic
+            dic: Dict[str, Any] = json.loads(result[0]) # -> dict{z:{}, x:{}}
+            return dic
+        except TypeError:
+            return {}
 
-    # Метод добавляет в БД словарь с датой и временем возникновения аварии формата json
-    def add_date_time(self, data) ->None:
-        # Формируем запрос: удалить из таблицы Date все данные
-        query = "DELETE FROM Duration "
+    # Метод добавляет в БД словарь формата json
+    def add_data_json_db(self, dic_data: Dict[str, Dict[str, Any]], **kword: str) -> None:
+        # Формируем запрос: удалить из таблицы данные
+        query = "DELETE FROM {}".format(kword['table'])
         # Делаем запрос к БД
         self.cursor.execute(query)
         # Подтверждаем
         self.conn.commit()
-        # Формируем запрос добавить в таблицу Date значение json
-        query = "INSERT INTO Duration VALUES (?)"
+        # Формируем запрос добавить в таблицу словарь с данными в формате json
+        query = "INSERT INTO {} VALUES (?)".format(kword['table'])
         # Преобразуем словарь в json 
-        dict_json = json.dumps(data)
-        # Делаем запрос к БД
+        dict_json = json.dumps(dic_data)
+        # Делаем запрос к БД передаем запрос query и кортеж с данными
         self.cursor.execute(query, (dict_json,))
         # Подтверждаем действия
         self.conn.commit()
 
-    # Метод добавляет в БД словарь промежуточные аварии в формате json
-    def add_interim_alarm(self, data) ->None:
-        # Формируем запрос: удалить из таблицы Date все данные
-        query = "DELETE FROM Interim "
-        # Делаем запрос к БД
-        self.cursor.execute(query)
-        # Подтверждаем
-        self.conn.commit()
-        # Формируем запрос добавить в таблицу Date значение json
-        query = "INSERT INTO Interim VALUES (?)"
-        # Преобразуем словарь в json 
-        dict_json = json.dumps(data)
-        # Делаем запрос к БД
-        self.cursor.execute(query, (dict_json,))
-        # Подтверждаем действия
-        self.conn.commit()
-
-    # Метод добавляет в БД словарь с авариями формата json
-    def add_alarm(self, data) ->None:
-        # Формируем запрос Удалить из таблицы Alarms все данные
-        query = "DELETE FROM Alarms"
-        # Сначала делаем запрос к БД на удаление данных передав запрос query
-        self.cursor.execute(query)
-        # Подтверждаем действие
-        self.conn.commit()
-        # Формируем запрос:  Добавить данные в таблицу Alarms
-        query = "INSERT INTO Alarms VALUES (?)"
-        # Преобразуем данные (словарь) в json 
-        dict_json = json.dumps(data)
-        # Затем делаем запрос к БД на добавление данных json в таблицу передав запрос query и сами данные
-        self.cursor.execute(query, (dict_json,))
-        # Подтверждаем действия
-        self.conn.commit()    
-
-    def _get_table_db(self):
-        result = self.cursor.execute("SELECT * FROM Users").fetchall()
-        return result
-
-    def _add_column(self, column):
+    def _add_column(self, column: str) -> None:
         query = "ALTER TABLE Ports ADD COLUMN {} text not NULL".format(column)
         #query = "CREATE TABLE Alarms data json"
         self.cursor.execute(query)
         self.conn.commit()
     
     # Метод создает таблицу в БД
-    def _add_table(self):
+    def _add_table(self) -> None:
         #query = "CREATE TABLE Ports (ip_addr not NULL, port integer not NULL, description text not NULL, FOREIGN KEY  (ip_addr) REFERENCES Devices(ip))"
         query = "CREAT TABLE Switch (data json)"
         self.cursor.execute(query)
         self.conn.commit()
 
-    def _del_table(self):
+    def _del_table(self) -> None:
        query = "DROP TABLE Settings"
        self.cursor.execute(query)
        self.conn.commit() 
 
-    def _get(self, **kword):
-        query = "SELECT chat_id FROM Users WHERE user_name= ? and chat_id ISNULL"
-        list_tuple_name = self.cursor.execute(query, (kword['user_name'],)).fetchall()# --> list[(),]
+    #def _get_table_db(self):
+        #result = self.cursor.execute("SELECT * FROM Users").fetchall()
+        #return result
+
+    #def _get(self, **kword):
+        #query = "SELECT chat_id FROM Users WHERE user_name= ? and chat_id ISNULL"
+        #list_tuple_name = self.cursor.execute(query, (kword['user_name'],)).fetchall()# --> list[(),]
 
 if __name__ == "__main__":
     sql = ConnectSqlDB()
 
     #sql.add_db(alarms='low_oil', num=35, table='Settings')
-    #sql.get_values_list_db('data', table='Duration')
+    #print(sql.get_values_list_db('data', table='Duration'))
+    #print(sql.get_values_dict_db('json_extract(data, "$.power_alarm", "$.hight_temp")', table='Alarms'))
+    #print(sql.get_values_dict_db('data', table='Alarms'))
     #sql.add_chat_id(user_name='Кузьмин Иван', chat_id='7777777')
     #sql.del_db(table='Settings')
     #sql.get(user_name='Кузьмин Иван')
-    print(sql.get_values_list_db('ip_addr', 'port', 'sla', 'loading', table='Ports'))
-    #print(sql.get_db('num_window', ip='10.12.12.12', table='Devices'))
+    #print(type(sql.get_values_list_db('chat_id', chat_id='IS not null', table='Users')[0][0]))
+    #print(sql.get_values_list_db('chat_id', chat_id='IS not null', table='Users')[0][0])
+    print(sql.get_db('num', alarms='monitor_count', table='Settings'))
     #sql.add_traffic('traffic_in', traffic = '1232312', ip='10.0.31.3', port='4')
     #sql._add_column('provider')
     #print(sql.get_table_db())
     #sql._add_table()
-    #print(sql.get_join_data('10.0.31.10'))
+    #print(sql.get_join_data('10.0.31.3'))
+    #print(sql.get_db('model', 'description', ip='10.31.178.2', table='Devices'))
     #sql.add_alarm(data)
-    #print(sql.get_alarm())
+    #print(sql.get_values_dict_db('data', table='Interim'))
     #print(type(sql.get_alarm()))
     #sql._del_table()
     #sql.add_device('forpost','10.12.12.12', 'KPP-FORPOST')

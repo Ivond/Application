@@ -56,7 +56,7 @@
      </font>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>6</number>
     </property>
     <widget class="QWidget" name="tab_6">
      <attribute name="title">
@@ -399,7 +399,7 @@ p, li { white-space: pre-wrap; }
        </rect>
       </property>
       <property name="placeholderText">
-       <string>Фрейм1</string>
+       <string>Окно1</string>
       </property>
      </widget>
      <widget class="QTextEdit" name="textEdit_11">
@@ -872,7 +872,7 @@ p, li { white-space: pre-wrap; }
        </rect>
       </property>
       <property name="placeholderText">
-       <string>Фрейм2</string>
+       <string>Окно2</string>
       </property>
      </widget>
      <widget class="QTextEdit" name="textEdit_29">
@@ -885,7 +885,7 @@ p, li { white-space: pre-wrap; }
        </rect>
       </property>
       <property name="placeholderText">
-       <string>Фрейм3</string>
+       <string>Окно3</string>
       </property>
      </widget>
      <widget class="QTextEdit" name="textEdit_30">
@@ -898,7 +898,7 @@ p, li { white-space: pre-wrap; }
        </rect>
       </property>
       <property name="placeholderText">
-       <string>Фрейм4</string>
+       <string>Окно4</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_29">
@@ -2276,8 +2276,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>380</width>
-         <height>181</height>
+         <width>100</width>
+         <height>30</height>
         </rect>
        </property>
        <attribute name="label">
@@ -3512,6 +3512,77 @@ p, li { white-space: pre-wrap; }
       </property>
       <property name="text">
        <string>Показать</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_42">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>360</y>
+        <width>371</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Параметры голосового</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_43">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>390</y>
+        <width>101</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Список голосов для выбора</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="comboBox_5">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>393</y>
+        <width>171</width>
+        <height>29</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="Set_voice_speech_btn">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>300</x>
+        <y>396</y>
+        <width>91</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Установить</string>
       </property>
      </widget>
     </widget>

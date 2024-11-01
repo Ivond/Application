@@ -66,8 +66,7 @@ class ConnectSqlDB:
             elif kword.get('user_name') and kword.get('chat_id', 'null') != 'null':
                 # Делаем запрос к БД получить имя пользователя ГДЕ имя пользователя = user_name и chat_id=None
                 query = "SELECT user_name FROM Users WHERE user_name= ? and chat_id = ?"
-                list_tuple_name = self.cursor.execute(query, (kword['user_name'], kword['chat_id'])).fetchall()# --> list[(),]
-                print(list_tuple_name)    
+                list_tuple_name = self.cursor.execute(query, (kword['user_name'], kword['chat_id'])).fetchall()# --> list[(),]   
             #
             elif kword.get('user_name') and kword.get('description'):
                 # Делаем запрос к БД получить имя пользователя ГДЕ имя пользователя = user_name и description
