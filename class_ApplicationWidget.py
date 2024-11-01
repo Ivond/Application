@@ -4,7 +4,9 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import QLabel, QMessageBox, QMainWindow
 
 class AplicationWidget:
+
     def __init__(self) -> None:
+        super().__init__()
 
     # ПЕРЕМЕННЫЕ PATH
 
@@ -19,7 +21,7 @@ class AplicationWidget:
         self.path_icon_btn_del = str(Path(Path.cwd(), "Resources", "Icons", "icn41.ico"))
         self.path_icon_btn_stop = str(Path(Path.cwd(), "Resources", "Icons", "icn65.ico"))
         self.path_icon_btn_clear = str(Path(Path.cwd(), "Resources", "Icons", "icn41.ico"))
-        self.path_icon_btn_show = str(Path(Path.cwd(), "Resources", "Icons", "icn72.ico"))
+        self.path_icon_btn_show = str(Path(Path.cwd(), "Resources", "Icons", "icn79.ico"))
         self.path_icon_btn_find = str(Path(Path.cwd(), "Resources", "Icons", "icn68.ico"))
         self.path_icon_menu_save = str(Path(Path.cwd(), "Resources", "Icons", "icn46.ico"))
         self.path_icon_menu_open = str(Path(Path.cwd(), "Resources", "Icons", "icn73.ico"))
@@ -31,6 +33,7 @@ class AplicationWidget:
         self.path_icon_progress = str(Path(Path.cwd(), "Resources", "Icons", "icn16.ico"))
         self.path_icon_not_runn = str(Path(Path.cwd(), "Resources", "Icons", "icn14.ico"))
         self.path_icon_sound_stop = str(Path(Path.cwd(), "Resources", "Icons", "icn65.ico"))
+        self.path_icon_sound_play_btn = str(Path(Path.cwd(), "Resources", "Icons", "icn78.ico"))
 
         # СОЗДАНИЕ ЭКЗЕМПЛЯРА КЛАССА QLable, ДЛЯ СОЗДАНИЯ ОКНА УВЕДОМЛЕНИЯ
         
@@ -93,178 +96,7 @@ class AplicationWidget:
         # Добавляем в экземпляр класса lbl текст и изображение ввиде html кода
         self.alarm_lbl.setText('<img src="{}">  AlarmMonitoring'.format(self.path_icon_not_runn))
 
-
-    # СОЗДАНИЕ ЭКЗЕМПЛЯРОВ КЛАССОВ QMessageBox, СОЗДАНИЕ ДИАЛОГОВЫХ ОКОН 
-        
-        # Создаем экзепляр класса QMessageBox(), с помощью которого можно создать диалоговое окно
-        self.inf_success = QMessageBox() 
-        self.inf_del = QMessageBox()
-        self.inf_no_user_del = QMessageBox()
-        self.err_request_db = QMessageBox()
-        self.inf_dubl_ip_address = QMessageBox()
-        self.err_ip_correct = QMessageBox()
-        self.inf_del_device = QMessageBox()
-        self.inf_del_switch = QMessageBox()
-        self.inf_del_join_data = QMessageBox()
-        self.inf_del_port = QMessageBox()
-        self.inf_no_device_del = QMessageBox()
-        self.info_done = QMessageBox()
-        self.err_port_correct = QMessageBox()
-        self.err_token_bot = QMessageBox()
-        self.err_socket_snmp = QMessageBox()
-        self.warn_dubl_name = QMessageBox()
-        self.err_network_bot = QMessageBox()
-        self.inf_exit_app = QMessageBox()
-        self.info_stop_bot = QMessageBox()
-        self.inf_close_page = QMessageBox()
-        self.err_run_snmp = QMessageBox()
-        self.warn_no_username_file = QMessageBox()
-        self.warn_no_device_file = QMessageBox()
-        self.inf_snmp_interval_time = QMessageBox()
-        self.inf_interval_time = QMessageBox()
-        self.inf_hight_temp = QMessageBox()
-        self.inf_low_temp = QMessageBox()
-        self.inf_low_volt = QMessageBox()
-        self.inf_window_hight_volt = QMessageBox()
-        self.inf_temp_hight_ddm = QMessageBox()
-        self.inf_signal_low_ddm = QMessageBox()
-        self.inf_temp_low_ddm = QMessageBox()
-        self.err_value = QMessageBox()
-        self.inf_not_select_radioButton = QMessageBox()
-
-        # Вызываем у экземпляра класса QMessageBox() метод setWindowTitle, который задает заголовок диалоговому окну.
-        self.inf_del.setWindowTitle('Уведомление')
-        self.inf_no_user_del.setWindowTitle('Уведомление')
-        self.inf_success.setWindowTitle('Уведомление')
-        self.inf_dubl_ip_address.setWindowTitle('Уведомление')
-        self.err_ip_correct.setWindowTitle('Ошибка')
-        self.inf_del_device.setWindowTitle('Уведомление')
-        self.inf_del_switch.setWindowTitle('Уведомление')
-        self.inf_del_join_data.setWindowTitle('Уведомление')
-        self.inf_del_port.setWindowTitle('Уведомление')
-        self.inf_no_device_del.setWindowTitle('Уведомление')
-        self.info_done.setWindowTitle('Уведомление')
-        self.err_port_correct.setWindowTitle('Ошибка')
-        self.err_token_bot.setWindowTitle('Ошибка')
-        self.err_socket_snmp.setWindowTitle('Ошибка')
-        self.warn_dubl_name.setWindowTitle('Предупреждение')
-        self.err_network_bot.setWindowTitle('Ошибка')
-        self.inf_exit_app.setWindowTitle('Уведомление')
-        self.info_stop_bot.setWindowTitle('Уведомление')
-        self.inf_close_page.setWindowTitle('Уведомление')
-        self.err_run_snmp.setWindowTitle('Ошибка')
-        self.warn_no_username_file.setWindowTitle('Предупреждение')
-        self.warn_no_device_file.setWindowTitle('Предупреждение')
-        self.err_request_db.setWindowTitle('Ошибка')
-        self.inf_snmp_interval_time.setWindowTitle('Уведомление')
-        self.inf_interval_time.setWindowTitle('Уведомление')
-        self.inf_hight_temp.setWindowTitle('Уведомление')
-        self.inf_low_temp.setWindowTitle('Уведомление')
-        self.inf_low_volt.setWindowTitle('Уведомление')
-        self.inf_window_hight_volt.setWindowTitle('Уведомление')
-        self.inf_temp_hight_ddm.setWindowTitle('Уведомление')
-        self.inf_signal_low_ddm.setWindowTitle('Уведомление')
-        self.inf_temp_low_ddm.setWindowTitle('Уведомление')
-        self.err_value.setWindowTitle('Ошибка')
-        self.inf_not_select_radioButton.setWindowTitle('Уведомление')
-
-        # Вызываем у экземпляра класса QMessageBox() метод setText, который будет выводить текст уведомления при появлении 
-        # диалогового окна
-        self.inf_success.setText('Успех!')
-        self.err_request_db.setText('Ошибка запроса к БД')
-        self.err_ip_correct.setText('ip адрес введен некорректно')
-        self.info_done.setText('Выполнено!')
-        self.err_port_correct.setText('Введенное значение неверно')
-        self.err_token_bot.setText('Ошибка подключения')
-        self.err_network_bot.setText('Ошибка сетевого подключения')
-        self.err_socket_snmp.setText('Ошибка сетевого подключения')
-        self.info_stop_bot.setText('Wait...')
-        self.inf_exit_app.setText('Выйти из программы?')
-        self.inf_close_page.setText('Закрыть страницу?')
-        self.err_run_snmp.setText('SNMP-опрощик не запущен')
-        self.warn_no_username_file.setText('В файле "Users" нет данных о именах пользователей.\nДобавьте имя пользователя в файл')
-        self.warn_no_device_file.setText('В файле "DataBase" нет данных об устройствах.\nДобавьте устройство в файл')
-        self.inf_snmp_interval_time.setText('Недопустимое значение')
-        self.inf_interval_time.setText('Недопустимое значение')
-        self.inf_hight_temp.setText('Недопустимое значение')
-        self.inf_low_temp.setText('Недопустимое значение')
-        self.inf_low_volt.setText('Недопустимое значение')
-        self.inf_window_hight_volt.setText('Недопустимое значение')
-        self.inf_temp_hight_ddm.setText('Недопустимое значение')
-        self.inf_signal_low_ddm.setText('Недопустимое значение')
-        self.inf_temp_low_ddm.setText('Недопустимое значение')
-        self.err_value.setText('Ошибка значения')
-        self.inf_not_select_radioButton.setText('Выберете номер окна')
-
-        # Вызываем у экземпляра класса QMessageBox() метод setIcon, который задает иконку, которая будет полявляется вместе 
-        # с диалоговым окном.
-        self.inf_del.setIcon(QMessageBox.Question)
-        self.inf_success.setIcon(QMessageBox.Information)
-        self.inf_no_user_del.setIcon(QMessageBox.Information)
-        self.inf_dubl_ip_address.setIcon(QMessageBox.Information)
-        self.err_ip_correct.setIcon(QMessageBox.Critical)
-        self.inf_del_device.setIcon(QMessageBox.Question)
-        self.inf_del_switch.setIcon(QMessageBox.Question)
-        self.inf_del_join_data.setIcon(QMessageBox.Question)
-        self.inf_del_port.setIcon(QMessageBox.Question)
-        self.inf_no_device_del.setIcon(QMessageBox.Information)
-        self.info_done.setIcon(QMessageBox.Information)
-        self.err_port_correct.setIcon(QMessageBox.Critical)
-        self.err_token_bot.setIcon(QMessageBox.Critical)
-        self.err_socket_snmp.setIcon(QMessageBox.Critical)
-        self.warn_dubl_name.setIcon(QMessageBox.Warning)
-        self.err_network_bot.setIcon(QMessageBox.Critical)
-        self.inf_exit_app.setIcon(QMessageBox.Question)
-        self.info_stop_bot.setIcon(QMessageBox.Information)
-        self.err_run_snmp.setIcon(QMessageBox.Critical)
-        self.warn_no_username_file.setIcon(QMessageBox.Warning)
-        self.warn_no_device_file.setIcon(QMessageBox.Warning)
-        self.err_request_db.setIcon(QMessageBox.Critical)
-        self.inf_snmp_interval_time.setIcon(QMessageBox.Information)
-        self.inf_interval_time.setIcon(QMessageBox.Information)
-        self.inf_hight_temp.setIcon(QMessageBox.Information)
-        self.inf_low_temp.setIcon(QMessageBox.Information)
-        self.inf_low_volt.setIcon(QMessageBox.Information)
-        self.inf_window_hight_volt.setIcon(QMessageBox.Information)
-        self.inf_temp_hight_ddm.setIcon(QMessageBox.Information)
-        self.inf_signal_low_ddm.setIcon(QMessageBox.Information)
-        self.inf_temp_low_ddm.setIcon(QMessageBox.Information)
-        self.err_value.setIcon(QMessageBox.Critical)
-        self.inf_not_select_radioButton.setIcon(QMessageBox.Information)
-
-        # Вызываем у экземпляра класса QMessageBox() метод setStandardButtons, который создает кнопки диалоговому окну
-        self.inf_del.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-        self.inf_exit_app.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
-        self.inf_del_device.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-        self.inf_del_switch.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-        self.inf_del_join_data.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-        self.inf_del_port.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-        self.warn_dubl_name.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
-        self.inf_close_page.setStandardButtons(QMessageBox.Close|QMessageBox.Cancel)
-
-        # Вызываем у экземпляра класса QMessageBox() метод setInformativeText, который задает дополнительный текст под основным текстом
-        #self.inf_del.setInformativeText('Дополнительный текст')
-        self.warn_dubl_name.setInformativeText('Добавить пользователя?')
-
-        # Вызываем у экземпляра класса QMessageBox() метод setDetailedText, который задает раскрывающийся текст в котором можно 
-        # указать дополнительную информацию об ошибке
-        self.inf_hight_temp.setDetailedText('Значение порога высокой температуры не может быть меньше 25')
-        self.inf_low_temp.setDetailedText('Значение порога низкой температуры не может быть больше 10')
-        self.inf_low_volt.setDetailedText('Значение порога низкого напряжения не может быть больше 50В')
-        self.inf_window_hight_volt.setDetailedText('Значение порога высокого напряжения не может быть меньше 230В')
-        self.inf_temp_hight_ddm.setDetailedText('Значение порога высокой температуры DDM не может быть меньше 40')
-        self.inf_temp_low_ddm.setDetailedText('Значение порога низкой температуры DDM не может быть больше 10')
-        self.inf_signal_low_ddm.setDetailedText('Значение порога низкого уровня сигнала не может быть больше -20dBm')
-        self.inf_interval_time.setDetailedText('Значение должно быть больше 0 и\nменьше или равно интервалу времени SNMP-опросчика')
-        #self.inf_snmp_interval_time.setDetailedText('Значение должно быть больше 0')
-        # Устанавливаем по умолчанию, что при всплывающем окне будет подсвечиваться кнопка Yes
-        self.inf_close_page.setDefaultButton(QMessageBox.Close)
-
-
-        #self.reply = QtWidgets.QMessageBox.information(self.inf_exit_app, 'Выход', 'Вы точно хотите выйти?',
-                                                  #QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
-
-    # СОЗДАЕМ ЭКЗЕМПЛЯР КЛАССА QIcon, ДОБАВЛЕНИЕ ИЗОБРАЖЕНИЯ ДЛЯ ДИАЛОГОВОГО ОКНА
+        # СОЗДАЕМ ЭКЗЕМПЛЯР КЛАССА QIcon, ДОБАВЛЕНИЕ ИЗОБРАЖЕНИЯ ДЛЯ ДИАЛОГОВОГО ОКНА
 
         # Создаем экземпляр класса icon_main_window, класс QIcon - отвечает за добавления иконки с изображением для основного окна программы
         self.icon_main_window = QtGui.QIcon()
@@ -294,42 +126,93 @@ class AplicationWidget:
 
         # У QMainWindow вызываем метод setWindowIcon, которому передаем экземпляр класса нашего приложения app(self) и экземпляр класса icon_main_window в котором содержится изображение
         QMainWindow.setWindowIcon(self, self.icon_main_window)
-        # У экземпляра класса inf_add, класс QMessageBox вызываем метод setWindowIcon, которому мы передаем экземпляр класса icon_inf в которм содержится изображение
-        self.inf_success.setWindowIcon(self.icon_inf)
-        self.inf_no_user_del.setWindowIcon(self.icon_inf)
-        self.inf_del.setWindowIcon(self.icon_quest)
-        self.inf_dubl_ip_address.setWindowIcon(self.icon_inf)
-        self.err_ip_correct.setWindowIcon(self.icon_err)
-        self.inf_del_device.setWindowIcon(self.icon_quest)
-        self.inf_del_switch.setWindowIcon(self.icon_quest)
-        self.inf_del_join_data.setWindowIcon(self.icon_quest)
-        self.inf_del_port.setWindowIcon(self.icon_quest)
-        self.inf_no_device_del.setWindowIcon(self.icon_inf)
-        self.info_done.setWindowIcon(self.icon_inf)
-        self.err_port_correct.setWindowIcon(self.icon_err)
-        self.info_stop_bot.setWindowIcon(self.icon_inf)
-        self.warn_dubl_name.setWindowIcon(self.icon_warn)
-        self.inf_exit_app.setWindowIcon(self.icon_quest)
-        self.err_token_bot.setWindowIcon(self.icon_err)
-        self.err_socket_snmp.setWindowIcon(self.icon_err)
-        self.err_network_bot.setWindowIcon(self.icon_err)
-        self.err_run_snmp.setWindowIcon(self.icon_err)
-        self.warn_no_username_file.setWindowIcon(self.icon_warn)
-        self.warn_no_device_file.setWindowIcon(self.icon_warn)
-        self.err_request_db.setWindowIcon(self.icon_err)
-        self.inf_not_select_radioButton.setWindowIcon(self.icon_inf)
 
-        # Диалоговые окна для установок значения параметров мониторинга
-        self.inf_interval_time.setWindowIcon(self.icon_inf)
-        self.inf_snmp_interval_time.setWindowIcon(self.icon_inf)
-        self.inf_hight_temp.setWindowIcon(self.icon_inf)
-        self.inf_low_temp.setWindowIcon(self.icon_inf)
-        self.inf_low_volt.setWindowIcon(self.icon_inf)
-        self.inf_window_hight_volt.setWindowIcon(self.icon_inf)
-        self.inf_signal_low_ddm.setWindowIcon(self.icon_inf)
-        self.inf_temp_hight_ddm.setWindowIcon(self.icon_inf)
-        self.inf_temp_low_ddm.setWindowIcon(self.icon_inf)
-        self.err_value.setWindowIcon(self.icon_err)
+    # СОЗДАНИЕ ЭКЗЕМПЛЯРОВ КЛАССОВ QMessageBox, СОЗДАНИЕ ДИАЛОГОВЫХ ОКОН 
+        
+        # Диалоговое окно с запросом на удаление ИБЭП
+        self.inf_del_device = QMessageBox()#
+        self.inf_del_device.setWindowTitle('Уведомление')
+        self.inf_del_device.setIcon(QMessageBox.Question)
+        self.inf_del_device.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        self.inf_del_device.setWindowIcon(self.icon_quest)
+        # Диалоговое окно с запросом на удаление коммутатора
+        self.inf_del_switch = QMessageBox() #
+        self.inf_del_switch.setWindowTitle('Уведомление')
+        self.inf_del_switch.setIcon(QMessageBox.Question)
+        self.inf_del_switch.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        self.inf_del_switch.setWindowIcon(self.icon_quest)
+        # Диалоговое окно с запросом на удаление коммутатора и портов
+        self.inf_del_join_data = QMessageBox() #
+        self.inf_del_join_data.setWindowTitle('Уведомление')
+        self.inf_del_join_data.setIcon(QMessageBox.Question)
+        self.inf_del_join_data.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        self.inf_del_join_data.setWindowIcon(self.icon_quest)
+        # Диалоговое окно с запросом на удаление пользователя
+        self.inf_del = QMessageBox() #
+        self.inf_del.setWindowTitle('Уведомление')
+        self.inf_del.setIcon(QMessageBox.Question)
+        self.inf_del.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        self.inf_del.setWindowIcon(self.icon_quest)
+        # Диалоговое окно с запросом на удаление порта коммутатора
+        self.inf_del_port = QMessageBox()
+        self.inf_del_port.setWindowTitle('Уведомление')
+        self.inf_del_port.setIcon(QMessageBox.Question)
+        self.inf_del_port.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        self.inf_del_port.setWindowIcon(self.icon_quest)
+        # Диалоговое окно с запросом на удаление sla коммутатора
+        self.inf_del_sla = QMessageBox()
+        self.inf_del_sla.setWindowTitle('Уведомление')
+        self.inf_del_sla.setIcon(QMessageBox.Question)
+        self.inf_del_sla.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        self.inf_del_sla.setWindowIcon(self.icon_quest)
+        # Диалоговое окно с запросом на выход из приложения
+        self.inf_exit_app = QMessageBox()
+        self.inf_exit_app.setWindowTitle('Уведомление')
+        self.inf_exit_app.setText('Выйти из программы?')
+        self.inf_exit_app.setIcon(QMessageBox.Question)
+        self.inf_exit_app.setStandardButtons(QMessageBox.Yes|QMessageBox.No)
+        self.inf_exit_app.setWindowIcon(self.icon_quest)
+        # Диалоговое окно с уведомлением о результате действия  
+        self.inf_success = QMessageBox()
+        self.inf_success.setWindowTitle('Уведомление')
+        self.inf_success.setText('Успех!')
+        self.inf_success.setIcon(QMessageBox.Information)
+        self.inf_success.setWindowIcon(self.icon_inf)
+        # Диалоговое окно с уведомлением об отсутствии значений
+        self.inf_empty = QMessageBox()
+        self.inf_empty.setWindowTitle('Уведомление')
+        self.inf_empty.setIcon(QMessageBox.Information)
+        self.inf_empty.setWindowIcon(self.icon_inf)
+        # Диалоговое окно с уведомлением об недопустимом значении
+        self.inf_value_invalid = QMessageBox()
+        self.inf_value_invalid.setText('Недопустимое значение')
+        self.inf_value_invalid.setWindowTitle('Уведомление')
+        self.inf_value_invalid.setIcon(QMessageBox.Information)
+        self.inf_value_invalid.setWindowIcon(self.icon_inf)
+        #
+        self.inf_value_error = QMessageBox()
+        self.inf_value_error.setText('Ошибка значения')
+        self.inf_value_error.setWindowTitle('Уведомление')
+        self.inf_value_error.setIcon(QMessageBox.Information)
+        self.inf_value_error.setWindowIcon(self.icon_inf)
+       # Ошибка выполнения 
+        self.runtime_error = QMessageBox()
+        self.runtime_error.setWindowTitle('Ошибка')
+        self.runtime_error.setIcon(QMessageBox.Critical)
+        self.runtime_error.setWindowIcon(self.icon_err)
+        # Диалоговое окно на запрос закрытия страницы
+        self.inf_close_page = QMessageBox()
+        self.inf_close_page.setWindowTitle('Уведомление')
+        self.inf_close_page.setText('Закрыть страницу?')
+        self.inf_close_page.setStandardButtons(QMessageBox.Close|QMessageBox.Cancel)
+        self.inf_close_page.setDefaultButton(QMessageBox.Close)
+        # Диалоговое окно на запрос остановить работу Telegram Bot
+        self.req_stop_bot = QMessageBox()
+        self.req_stop_bot.setWindowTitle('Уведомление')
+        self.req_stop_bot.setText('Конфликт запущенных экземпляров Telegram Бот\n Остановить работу Telegram Бота?')
+        self.req_stop_bot.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+        self.req_stop_bot.setDefaultButton(QMessageBox.Ok)
+        self.req_stop_bot.setWindowIcon(self.icon_quest)
 
     # СОЗДАЕМ ЭКЗЕМПЛЯР КЛАССА QIcon, ДОБАВЛЕНИЕ ИЗОБРАЖЕНИЯ ДЛЯ КНОПОК ПРИЛОЖЕНИЯ
 
@@ -343,6 +226,7 @@ class AplicationWidget:
         self.icon_btn_find = QtGui.QIcon()
         self.icon_btn_set = QtGui.QIcon()
         self.icon_btn_open_second_window = QtGui.QIcon()
+        self.icon_btn_play_sound = QtGui.QIcon() 
         # Вызываем у экземпляра класса icon_btn_add метод addFile, передав ему в качестве аргумента путь, где находится изображение
         self.icon_btn_add.addFile(self.path_icon_btn_add)
         self.icon_btn_del.addFile(self.path_icon_btn_del)
@@ -353,7 +237,8 @@ class AplicationWidget:
         self.icon_btn_find.addFile(self.path_icon_btn_find)
         self.icon_btn_set.addFile(self.path_icon_btn_set)
         self.icon_btn_open_second_window.addFile(self.path_icon_btn_open_window)
-
+        self.icon_btn_play_sound.addFile(self.path_icon_sound_play_btn)
+        
     # СОЗДАНИЕ ЭКЗЕМПЛЯРОВ КЛАССА QIcon, ДОБАВЛЕНИЕ ИЗОБРАЖЕНИЯ ДЛЯ МЕНЮ ВКЛАДОК
 
         # Создаем экземпляр класса QIcon - отвечает за добавления иконки с изображением для вкладки меню
