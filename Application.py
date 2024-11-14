@@ -72,10 +72,8 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget): # typ
         # Подключаем сигнал signal_network_connect к Слоту(метод handler_signal_bot_connect)
         self.helper.signal_network_connect.connect(self.close_dialog_box_network_err)
         
-        '''
-        В модуле class_ClientModbus создали сигнал signa_network_error, который будет испускаться при отсутствии
-        подключения к сети
-        '''
+        ''' В модуле class_ClientModbus создали сигнал signa_network_error, который будет испускаться при отсутствии
+        подключения к сети '''
         # У экземпляра класса snmp_ask вызываем сигнал к которому монтируем метод, который будет вызываться при испускании сигнала
         self.snmp_ask.signa_network_error.connect(self.show_dialog_box_network_err)
 
@@ -85,7 +83,6 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget): # typ
         '''
         # Вызываем сигнал к которому монтируем метод, который будет вызываться при испускании сигнала и выводить результат
         self.check_model.signal_snmp_request_done.connect(self.outpu_result)
-
 
     # ПЕРЕМЕННАЯ КООРДИНАТА
         # Создаем переменные координаты X, Y, значение которых будет задавть сдвиг диалогового окна относительно основного окна приложения
@@ -293,8 +290,7 @@ class Application(Ui_MainWindow, QtWidgets.QMainWindow, AplicationWidget): # typ
         self.inf_del_sla.buttonClicked.connect(self.click_btn_del_sla)
         self.inf_close_page.buttonClicked.connect(self.click_btn_close_page)
         self.req_stop_bot.buttonClicked.connect(self.click_btn_stop_bot)
-
-    
+        
     # СТАТУС БАР
         # Выводим Надпись Готово с изображением в статус Бар
         self.statusbar.addWidget(self.lbl)
