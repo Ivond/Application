@@ -476,12 +476,7 @@ class TelegramBot(QThread):
         
 
 if __name__ == '__main__':
+    pass
 
-    bot = TelegramBot("5412146072:AAF8TW4mDK_N7folBpjVmN1sAGG6fDlV_iU")
-    #bot.send_message('489848468', f'Привет') 1459017413:AAFFuz2YCJxVjj77IOkzTQaRVuzMp1IiEiU
-    #bot.send_message(update.effective_message.chat_id, *args, **kwargs)
-    #bot.run() 5412146072:AAF8TW4mDK_N7folBpjVmN1sAGG6fDlV_iU
-    #print('HJHJJHh')
-    #print(bot._read_file( r'D:\Users\Ivond\Documents\Python\Application\SNMP Ask\db_alarm.json'))
 
     
