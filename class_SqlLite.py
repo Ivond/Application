@@ -6,12 +6,10 @@ import json
 class ConnectSqlDB:
 
     def __init__(self):
-
         self.path_sql_db = Path(Path.cwd(), "Resources", "chatbot.db")
         # Первое что мы должны сделать создать соединение с БД:
         self.conn = sqlite3.connect(self.path_sql_db)
         self.cursor = self.conn.cursor()
-
         self.kwords = {"name":None, "chat_id":None}
 
     # Метод добавляет данные в БД
